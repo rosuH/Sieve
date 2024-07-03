@@ -1,2 +1,2 @@
 # HTLAndroid
-A Better Android App to Filter Chinese(*) Apps.
+A Better Android App to Filter Apps.
