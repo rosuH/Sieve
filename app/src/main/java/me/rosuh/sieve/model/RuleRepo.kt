@@ -111,7 +111,7 @@ class RuleRepo @Inject constructor(
      *      false com.example
      */
     suspend fun exportApplicationList(
-        packageList: List<ApplicationInfo>,
+        packageList: List<AppInfo>,
         mode: RuleMode,
         type: RuleRepo.ExportType
     ): String {
@@ -141,7 +141,7 @@ class RuleRepo @Inject constructor(
         }
     }
 
-    suspend fun filter(packageList: List<ApplicationInfo>, mode: RuleMode): List<ApplicationInfo> =
+    suspend fun filter(packageList: List<AppInfo>, mode: RuleMode): List<AppInfo> =
         withContext(Dispatchers.IO) {
             val subscriptionList =
                 db?.ruleSubscriptionDao()?.getAllActiveWithRule(mode) ?: emptyList()

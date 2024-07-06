@@ -1,5 +1,6 @@
 package me.rosuh.sieve.model.database
 
+import androidx.compose.runtime.Immutable
 import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity
@@ -59,3 +60,12 @@ data class RuleSubscriptionWithRules(
     )
     val ruleList: List<Rule>
 )
+
+@Immutable
+data class StableRuleSubscriptionWithRules(
+    val list: List<RuleSubscriptionWithRules>
+):List<RuleSubscriptionWithRules> by list {
+    companion object {
+        val empty = StableRuleSubscriptionWithRules(emptyList())
+    }
+}
