@@ -9,8 +9,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.rosuh.sieve.model.AppInfo
@@ -19,6 +17,7 @@ import me.rosuh.sieve.model.RuleRepo
 import me.rosuh.sieve.model.AppList
 import me.rosuh.sieve.model.database.RuleSubscriptionWithRules
 import me.rosuh.sieve.model.database.StableRuleSubscriptionWithRules
+import me.rosuh.sieve.utils.Logger
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import javax.inject.Inject
 
@@ -46,16 +45,6 @@ class MainViewModel @Inject constructor(
         data class SubscriptionPullToRefresh(val ruleMode: RuleMode) : UIAction()
     }
 
-    data class SubscriptionManagerState(
-        val isRefreshing: Boolean = false,
-        val isLoadingBypass: Boolean = false,
-        val isLoadingProxy: Boolean = false,
-        val isAddSubscription: Boolean = false,
-        val addSubscriptionCheckFailed: Boolean = false,
-        val byPassSubscriptionList: List<RuleSubscriptionWithRules> = emptyList(),
-        val proxySubscriptionList: List<RuleSubscriptionWithRules> = emptyList(),
-    )
-
     sealed class Event {
         data class ScanFailed(val msg: String = "Scan failed") : Event()
     }
@@ -64,10 +53,10 @@ class MainViewModel @Inject constructor(
 
     val weaveState: WeaveState = WeaveState()
 
-    private val _subscriptionManagerState = MutableStateFlow<SubscriptionManagerState>(SubscriptionManagerState())
-    val subscriptionManagerState: StateFlow<SubscriptionManagerState> = _subscriptionManagerState
+    val subscriptionManagerState = SubscriptionManagerState()
 
     fun processUIAction(action: UIAction) {
+        Logger.i(TAG, "processUIAction ${hashCode()}: $action")
         viewModelScope.launch {
             when (action) {
                 is UIAction.Init -> {
@@ -84,7 +73,7 @@ class MainViewModel @Inject constructor(
                     viewModelScope.launch(Dispatchers.IO) {
                         repo.getAllActiveWithRuleFlow(RuleMode.Proxy).collect {
                             updateSubscriptionManagerState {
-                                copy(proxySubscriptionList = it)
+                                updateProxySubscriptionList(it)
                             }
                         }
                     }
@@ -92,7 +81,7 @@ class MainViewModel @Inject constructor(
                     viewModelScope.launch(Dispatchers.IO) {
                         repo.getAllActiveWithRuleFlow(RuleMode.ByPass).collect {
                             updateSubscriptionManagerState {
-                                copy(byPassSubscriptionList = it)
+                                updateByPassSubscriptionList(it)
                             }
                         }
                     }
@@ -178,7 +167,7 @@ class MainViewModel @Inject constructor(
 
                 UIAction.AddSubscription -> {
                     updateSubscriptionManagerState {
-                        copy(isAddSubscription = true)
+                        isAddSubscription = true
                     }
                 }
 
@@ -186,19 +175,20 @@ class MainViewModel @Inject constructor(
                     withContext(Dispatchers.Default) {
                         if (action.name.isNullOrBlank() && action.url.isNullOrBlank()) {
                             updateSubscriptionManagerState {
-                                copy(isAddSubscription = false)
+                                isAddSubscription = false
                             }
                             return@withContext
                         }
                         val url = kotlin.runCatching { action.url?.toHttpUrl() }.getOrNull()
                         if (url == null) {
                             updateSubscriptionManagerState {
-                                copy(addSubscriptionCheckFailed = true)
+                                addSubscriptionCheckFailed = true
                             }
                             return@withContext
                         }
                         updateSubscriptionManagerState {
-                            copy(isAddSubscription = false, addSubscriptionCheckFailed = false)
+                            isAddSubscription = false
+                            addSubscriptionCheckFailed = false
                         }
                         // add subscription
                         repo.addSubscription(
@@ -217,11 +207,11 @@ class MainViewModel @Inject constructor(
                 is UIAction.SubscriptionPullToRefresh -> {
                     viewModelScope.launch(Dispatchers.IO) {
                         updateSubscriptionManagerState {
-                            copy(isRefreshing = true)
+                            isRefreshing = true
                         }
                         repo.syncAllConf(action.ruleMode)
                         updateSubscriptionManagerState {
-                            copy(isRefreshing = false)
+                            isRefreshing = false
                         }
                     }
                 }
@@ -236,9 +226,9 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private suspend fun updateSubscriptionManagerState(reduce: SubscriptionManagerState.() -> SubscriptionManagerState) {
+    private suspend fun updateSubscriptionManagerState(reduce: SubscriptionManagerState.() -> Unit) {
         withContext(Dispatchers.Main.immediate) {
-            _subscriptionManagerState.value = _subscriptionManagerState.value.reduce()
+            subscriptionManagerState.reduce()
         }
     }
 }

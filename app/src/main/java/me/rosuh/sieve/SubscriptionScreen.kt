@@ -37,8 +37,10 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -54,19 +56,71 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import me.rosuh.sieve.model.RuleMode
 import me.rosuh.sieve.model.database.RuleSubscriptionWithRules
 import me.rosuh.sieve.utils.calculateDuration
 
+@Stable
+class SubscriptionManagerState(
+    isRefreshing: Boolean = true,
+    isLoadingBypass: Boolean = false,
+    isLoadingProxy: Boolean = false,
+    isAddSubscription: Boolean = false,
+    addSubscriptionCheckFailed: Boolean = false,
+    byPassSubscriptionList: List<RuleSubscriptionWithRules> = emptyList(),
+    proxySubscriptionList: List<RuleSubscriptionWithRules> = emptyList(),
+) {
+    var isRefreshing: Boolean by mutableStateOf(isRefreshing)
+    var isLoadingBypass: Boolean by mutableStateOf(isLoadingBypass)
+    var isLoadingProxy: Boolean by mutableStateOf(isLoadingProxy)
+    var isAddSubscription: Boolean by mutableStateOf(isAddSubscription)
+    var addSubscriptionCheckFailed: Boolean by mutableStateOf(addSubscriptionCheckFailed)
+
+    private var _byPassSubscriptionList = MutableStateFlow(byPassSubscriptionList)
+    private var _proxySubscriptionList = MutableStateFlow(proxySubscriptionList)
+
+    val byPassSubscriptionList: StateFlow<List<RuleSubscriptionWithRules>> = _byPassSubscriptionList
+    val proxySubscriptionList: StateFlow<List<RuleSubscriptionWithRules>> = _proxySubscriptionList
+
+    fun updateByPassSubscriptionList(list: List<RuleSubscriptionWithRules>) {
+        _byPassSubscriptionList.value = list
+    }
+
+    fun updateProxySubscriptionList(list: List<RuleSubscriptionWithRules>) {
+        _proxySubscriptionList.value = list
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SubscriptionScreen(
-    subscriptionManagerState: MainViewModel.SubscriptionManagerState,
+    viewModel: MainViewModel,
     onAddSubscription: () -> Unit = {},
     onSubscriptionSwitch: (RuleSubscriptionWithRules, Boolean) -> Unit = { _, _ -> },
     onPullToRefresh: (mode: RuleMode) -> Unit = { _ -> }
 ) {
+    val subscriptionManagerState = remember {
+        viewModel.subscriptionManagerState
+    }
+    val byPassSubscriptionList by subscriptionManagerState.byPassSubscriptionList.collectAsStateWithLifecycle()
+    val proxySubscriptionList by subscriptionManagerState.proxySubscriptionList.collectAsStateWithLifecycle()
+    if (subscriptionManagerState.isAddSubscription) {
+        AddSubscriptionDialog(
+            isUrlError = subscriptionManagerState.addSubscriptionCheckFailed,
+            onAddSubscriptionFinish = { name, url ->
+                viewModel.processUIAction(
+                    MainViewModel.UIAction.AddSubscriptionFinish(
+                        name,
+                        url
+                    )
+                )
+            }
+        )
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -167,9 +221,9 @@ fun SubscriptionScreen(
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     val list = if (page == 0) {
-                        subscriptionManagerState.byPassSubscriptionList
+                        byPassSubscriptionList
                     } else {
-                        subscriptionManagerState.proxySubscriptionList
+                        proxySubscriptionList
                     }
 
                     Column(
@@ -300,12 +354,12 @@ fun AddSubscriptionDialog(
                 )
                 var name by remember { mutableStateOf("") }
                 var url by remember { mutableStateOf("") }
-                TextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("订阅名称") },
-                    placeholder = { Text("留空则由配置文件指定") }
-                )
+//                TextField(
+//                    value = name,
+//                    onValueChange = { name = it },
+//                    label = { Text("订阅名称") },
+//                    placeholder = { Text("留空则由配置文件指定") }
+//                )
                 TextField(
                     value = url,
                     onValueChange = { url = it },

@@ -1,11 +1,13 @@
 package me.rosuh.sieve
 
+import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
+import android.view.WindowManager
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
@@ -56,19 +58,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import me.rosuh.sieve.model.AppInfo
+import me.rosuh.sieve.model.AppList
 import me.rosuh.sieve.model.RuleMode
 import me.rosuh.sieve.model.RuleRepo
-import me.rosuh.sieve.model.AppList
-import me.rosuh.sieve.model.database.RuleSubscriptionWithRules
 import me.rosuh.sieve.model.database.StableRuleSubscriptionWithRules
 import me.rosuh.sieve.utils.Logger
 import me.rosuh.sieve.utils.calculateDuration
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -423,31 +426,38 @@ private fun AppGrid(
     stableUserPackageList: AppList,
 ) {
     val pm = LocalContext.current.packageManager
+    val resource = LocalContext.current.resources
+    val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        (LocalContext.current.display)
+    } else {
+        (LocalContext.current.getSystemService(Context.WINDOW_SERVICE) as WindowManager?)?.defaultDisplay
+    }
     val lazyGridState = rememberSaveable(saver = LazyGridState.Saver) {
         LazyGridState(0, 0)
     }
     LaunchedEffect(stableUserPackageList.size) {
+        // get screen refresh rate
+        val screenRefreshRate = display?.refreshRate ?: 60f
+        val interval = (1000 / screenRefreshRate).toLong()
         var scrollValue = 0.5f
         do {
             when {
                 lazyGridState.canScrollBackward.not() -> {
                     scrollValue = -scrollValue
                     lazyGridState.animateScrollBy(scrollValue)
-                    delay(16)
                 }
 
                 lazyGridState.canScrollForward.not() -> {
                     // do nothing
                     scrollValue = -scrollValue
                     lazyGridState.animateScrollBy(scrollValue)
-                    delay(16)
                 }
 
                 else -> {
                     lazyGridState.scrollBy(scrollValue)
-                    delay(16)
                 }
             }
+            delay(interval)
         } while (stableUserPackageList.isNotEmpty())
     }
     LazyVerticalGrid(
