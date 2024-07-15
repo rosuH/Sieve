@@ -3,24 +3,20 @@ package me.rosuh.sieve
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.background
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -28,14 +24,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
-import me.rosuh.sieve.ui.theme.SieveTheme
+import me.rosuh.sieve.ui.theme.AppTheme
 import me.rosuh.sieve.utils.Logger
 
 @AndroidEntryPoint
@@ -45,15 +40,11 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
-            SieveTheme {
-                // A surface container using the 'background' color from the theme
-
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+            AppTheme {
+                Surface(modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
                     val navController = rememberNavController()
                     Column(Modifier.fillMaxSize()) {
                         var selectedItem by remember { mutableIntStateOf(0) }
@@ -134,15 +125,7 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                                 composable(Screen.About.route) {
-                                    Column(
-                                        Modifier.fillMaxSize(),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(
-                                            text = "关于"
-                                        )
-                                    }
+                                    AboutScreen()
                                 }
                             }
                         }
@@ -196,24 +179,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
-
-
-@Composable
-private fun OrderDot(text: String, isSelected: Boolean) {
-    val color by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-        label = "HighLightDotColor"
-    )
-    Text(
-        text,
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.primary,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier
-            .padding(top = 20.dp)
-            .size(36.dp)
-            .background(color, CircleShape)
-            .wrapContentHeight()
-    )
 }

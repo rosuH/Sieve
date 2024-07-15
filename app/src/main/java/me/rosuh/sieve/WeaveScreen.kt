@@ -37,8 +37,10 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -95,207 +97,209 @@ fun WeaveScreen(
             onScan()
         }
     }
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(top = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        val rowModifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp, start = 24.dp, end = 24.dp, bottom = 12.dp)
-        val cardModifier = Modifier
-            .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 24.dp)
-            .fillMaxWidth()
-            .aspectRatio(2f)
-        val titleModifier = Modifier
-        val buttonModifier = Modifier.padding(start = 16.dp, top = 12.dp)
-        Text(
-            text = "制作列表",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(top = 24.dp)
-        )
-        Column(modifier = Modifier) {
-            AppListCard(
-                installPackageSize = installPackageList.size,
-                userPackageList,
-                latestScanTime = weaveState.latestScanTime,
-                onScan = onScanRemember,
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("制作列表")
+                }
             )
-            Column(modifier = rowModifier) {
-                val paddingStart = 16.dp
-                Text(
-                    "规则",
-                    modifier = titleModifier,
-                    style = MaterialTheme.typography.titleLarge
+        },
+    ) { innerPadding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val rowModifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, start = 24.dp, end = 24.dp, bottom = 12.dp)
+            val titleModifier = Modifier
+            val buttonModifier = Modifier.padding(start = 16.dp, top = 12.dp)
+            Column(modifier = Modifier) {
+                AppListCard(
+                    installPackageSize = installPackageList.size,
+                    userPackageList,
+                    latestScanTime = weaveState.latestScanTime,
+                    onScan = onScanRemember,
                 )
-                Text(
-                    text = "对 APP 列表应用指定规则，过滤后即可导出",
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(start = paddingStart, top = 8.dp)
-                )
-                Row(Modifier.padding(start = paddingStart, top = 12.dp)) {
-                    FilterChip(
-                        modifier = Modifier.animateContentSize(),
-                        onClick = { onChangeMode(RuleMode.ByPass) },
-                        label = {
-                            Text(RuleMode.ByPass.value)
-                        },
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = weaveState.mode == RuleMode.ByPass
-                        ),
-                        selected = weaveState.mode == RuleMode.ByPass,
-                        leadingIcon = {
-                            if (weaveState.mode == RuleMode.ByPass) {
-                                Icon(
-                                    imageVector = Icons.Filled.Done,
-                                    contentDescription = "Selected Bypass Icon",
-                                    modifier = Modifier.size(FilterChipDefaults.IconSize)
-                                )
+                Column(modifier = rowModifier) {
+                    val paddingStart = 16.dp
+                    Text(
+                        "规则",
+                        modifier = titleModifier,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        text = "对 APP 列表应用指定规则，过滤后即可导出",
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(start = paddingStart, top = 8.dp)
+                    )
+                    Row(Modifier.padding(start = paddingStart, top = 12.dp)) {
+                        FilterChip(
+                            modifier = Modifier.animateContentSize(),
+                            onClick = { onChangeMode(RuleMode.ByPass) },
+                            label = {
+                                Text(RuleMode.ByPass.value)
+                            },
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = weaveState.mode == RuleMode.ByPass
+                            ),
+                            selected = weaveState.mode == RuleMode.ByPass,
+                            leadingIcon = {
+                                if (weaveState.mode == RuleMode.ByPass) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Done,
+                                        contentDescription = "Selected Bypass Icon",
+                                        modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                    )
+                                } else {
+                                    Spacer(modifier = Modifier.size(FilterChipDefaults.IconSize))
+
+                                }
+                            },
+                        )
+                        FilterChip(
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .animateContentSize(),
+                            onClick = { onChangeMode(RuleMode.Proxy) },
+                            label = {
+                                Text(RuleMode.Proxy.value)
+                            },
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                weaveState.mode == RuleMode.Proxy
+                            ),
+                            selected = weaveState.mode == RuleMode.Proxy,
+                            leadingIcon = if (weaveState.mode == RuleMode.Proxy) {
+                                {
+                                    Icon(
+                                        imageVector = Icons.Filled.Done,
+                                        contentDescription = "Selected Proxy Icon",
+                                        modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                    )
+                                }
                             } else {
-                                Spacer(modifier = Modifier.size(FilterChipDefaults.IconSize))
-
-                            }
-                        },
+                                {
+                                    Spacer(modifier = Modifier.size(FilterChipDefaults.IconSize))
+                                }
+                            },
+                        )
+                    }
+                    Row(modifier = Modifier.padding(start = paddingStart, top = 8.dp)) {
+                        Text(
+                            text = "已启用订阅："
+                        )
+                        Spacer(modifier = Modifier.size(2.dp))
+                        AnimatedContent(
+                            targetState = weaveState.subscription.size,
+                            label = "subscriptionSize"
+                        ) { targetState ->
+                            Text(
+                                text = targetState.toString()
+                            )
+                        }
+                    }
+                    Row(modifier = Modifier.padding(start = paddingStart, top = 8.dp)) {
+                        Text(
+                            text = "规则总计："
+                        )
+                        Spacer(modifier = Modifier.size(2.dp))
+                        AnimatedContent(
+                            targetState = weaveState.subscription.sumOf { it.ruleList.size },
+                            label = "subscriptionSize"
+                        ) { targetState ->
+                            Text(
+                                text = targetState.toString()
+                            )
+                        }
+                    }
+                }
+                Column(modifier = rowModifier) {
+                    val context = LocalContext.current
+                    Text(
+                        "导出列表",
+                        modifier = titleModifier,
+                        style = MaterialTheme.typography.titleLarge
                     )
-                    FilterChip(
-                        modifier = Modifier
-                            .padding(start = 8.dp)
-                            .animateContentSize(),
-                        onClick = { onChangeMode(RuleMode.Proxy) },
-                        label = {
-                            Text(RuleMode.Proxy.value)
-                        },
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            weaveState.mode == RuleMode.Proxy
-                        ),
-                        selected = weaveState.mode == RuleMode.Proxy,
-                        leadingIcon = if (weaveState.mode == RuleMode.Proxy) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Filled.Done,
-                                    contentDescription = "Selected Proxy Icon",
-                                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                    val exportEnable = weaveState.isExporting.not()
+                    val iconModifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                    Row {
+                        IconButton(
+                            modifier = buttonModifier.size(48.dp),
+                            enabled = exportEnable,
+                            onClick = {
+                                onExport(
+                                    installPackageList,
+                                    weaveState.mode,
+                                    RuleRepo.ExportType.Surfboard
+                                )
+                            }) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_surfboard),
+                                contentDescription = "Surfboard",
+                                modifier = iconModifier
+                            )
+                        }
+                        IconButton(
+                            modifier = buttonModifier.size(48.dp),
+                            enabled = exportEnable,
+                            onClick = {
+                                onExport(
+                                    installPackageList,
+                                    weaveState.mode,
+                                    RuleRepo.ExportType.NekoBoxAndroid
+                                )
+                            }) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_nbfa),
+                                contentDescription = "NekoBoxForAndroid",
+                                modifier = iconModifier
+                            )
+                        }
+                    }
+                    Row(modifier = Modifier.padding(top = 8.dp)) {
+                        val modifier = Modifier.padding(start = 8.dp)
+                        when {
+                            weaveState.isExporting -> {
+                                Text(
+                                    text = "导出中",
+                                    modifier = modifier,
+                                    style = MaterialTheme.typography.labelMedium
                                 )
                             }
-                        } else {
-                            {
-                                Spacer(modifier = Modifier.size(FilterChipDefaults.IconSize))
+
+                            weaveState.isExportFailed -> {
+                                Text(
+                                    text = "失败, ${weaveState.exportMsg}",
+                                    modifier = modifier,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
                             }
-                        },
-                    )
-                }
-                Row(modifier = Modifier.padding(start = paddingStart, top = 8.dp)) {
-                    Text(
-                        text = "已启用订阅："
-                    )
-                    Spacer(modifier = Modifier.size(2.dp))
-                    AnimatedContent(
-                        targetState = weaveState.subscription.size,
-                        label = "subscriptionSize"
-                    ) { targetState ->
-                        Text(
-                            text = targetState.toString()
-                        )
-                    }
-                }
-                Row(modifier = Modifier.padding(start = paddingStart, top = 8.dp)) {
-                    Text(
-                        text = "规则总计："
-                    )
-                    Spacer(modifier = Modifier.size(2.dp))
-                    AnimatedContent(
-                        targetState = weaveState.subscription.sumOf { it.ruleList.size },
-                        label = "subscriptionSize"
-                    ) { targetState ->
-                        Text(
-                            text = targetState.toString()
-                        )
-                    }
-                }
-            }
-            Column(modifier = rowModifier) {
-                val context = LocalContext.current
-                Text(
-                    "导出列表",
-                    modifier = titleModifier,
-                    style = MaterialTheme.typography.titleLarge
-                )
-                val exportEnable = weaveState.isExporting.not()
-                val iconModifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                Row {
-                    IconButton(
-                        modifier = buttonModifier.size(48.dp),
-                        enabled = exportEnable,
-                        onClick = {
-                            onExport(
-                                installPackageList,
-                                weaveState.mode,
-                                RuleRepo.ExportType.Surfboard
-                            )
-                        }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_surfboard),
-                            contentDescription = "Surfboard",
-                            modifier = iconModifier
-                        )
-                    }
-                    IconButton(
-                        modifier = buttonModifier.size(48.dp),
-                        enabled = exportEnable,
-                        onClick = {
-                            onExport(
-                                installPackageList,
-                                weaveState.mode,
-                                RuleRepo.ExportType.NekoBoxAndroid
-                            )
-                        }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_nbfa),
-                            contentDescription = "NekoBoxForAndroid",
-                            modifier = iconModifier
-                        )
-                    }
-                }
-                Row(modifier = Modifier.padding(top = 8.dp)) {
-                    val modifier = Modifier.padding(start = 8.dp)
-                    when {
-                        weaveState.isExporting -> {
-                            Text(
-                                text = "导出中",
-                                modifier = modifier,
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        }
 
-                        weaveState.isExportFailed -> {
-                            Text(
-                                text = "失败, ${weaveState.exportMsg}",
-                                modifier = modifier,
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        }
-
-                        weaveState.isExportSuccess -> {
-                            Text(
-                                text = "成功, ${weaveState.exportMsg}",
-                                modifier = modifier,
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                            val clipboardManager = LocalClipboardManager.current
-                            val textToCopy by remember { mutableStateOf(weaveState.exportResult) }
-                            clipboardManager.setText(AnnotatedString(textToCopy))
-                            Logger.d("WeaveScreen", "Copy to clipboard: $textToCopy")
+                            weaveState.isExportSuccess -> {
+                                Text(
+                                    text = "成功, ${weaveState.exportMsg}",
+                                    modifier = modifier,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                                val clipboardManager = LocalClipboardManager.current
+                                val textToCopy by remember { mutableStateOf(weaveState.exportResult) }
+                                clipboardManager.setText(AnnotatedString(textToCopy))
+                                Logger.d("WeaveScreen", "Copy to clipboard: $textToCopy")
+                            }
                         }
                     }
                 }
             }
         }
     }
+
 }
 
 
