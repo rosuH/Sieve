@@ -1,3 +1,39 @@
 <resources>
     <string name="app_name">Sieve</string>
+    <string name="tab_home">制作</string>
+    <string name="tab_subscription">订阅</string>
+    <string name="tab_setting">设置</string>
+
+    <string name="tab_home_title_install_size">共安装%d个应用</string>
+    <string name="tab_home_title_scan_time">扫描时间</string>
+    <string name="tab_home_title_rule">规则</string>
+    <string name="tab_home_title_rule_desc">对 APP 列表应用指定规则，过滤后即可导出</string>
+    <string name="tab_home_title_rule_proxy">代理</string>
+    <string name="tab_home_title_rule_bypass">绕过</string>
+    <string name="tab_home_title_rule_enable_subscription">已启用订阅</string>
+    <string name="tab_home_title_rule_total">规则总计</string>
+    <string name="tab_home_title_export">导出规则</string>
+    <string name="tab_home_title_exporting">导出中…</string>
+    <string name="tab_home_title_export_failed">失败</string>
+    <string name="tab_home_title_export_success">成功</string>
+    <string name="tab_home_scan_time_unit_before">前</string>
+    <string name="tab_home_scan_time_unit_after">后</string>
+    <string name="tab_home_scan_time_unit_d">天</string>
+    <string name="tab_home_scan_time_unit_h">小时</string>
+    <string name="tab_home_scan_time_unit_m">分钟</string>
+    <string name="tab_home_scan_time_unit_s">秒</string>
+    <string name="tab_home_scan_time_unit_just_now">刚刚</string>
+
+
+    <string name="tab_subscription_title_manager">订阅管理</string>
+    <string name="tab_subscription_rule_proxy">代理</string>
+    <string name="tab_subscription_rule_bypass">绕过</string>
+    <string name="tab_subscription_empty">暂无订阅</string>
+    <string name="tab_subscription_add">添加订阅</string>
+
+
+    <string name="tab_setting_title_about">关于</string>
+    <string name="tab_setting_title_version">版本</string>
+    <string name="tab_setting_title_repo">仓库</string>
+    <string name="tab_setting_title_author">作者</string>
 </resources>

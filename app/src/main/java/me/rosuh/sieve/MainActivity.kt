@@ -4,16 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,7 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -44,26 +47,28 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AppTheme {
-                Surface(modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+                Surface(modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()) {
                     val navController = rememberNavController()
-                    Column(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxSize()) {
                         var selectedItem by remember { mutableIntStateOf(0) }
                         val items = listOf(
-                            Screen.Weave.route to Screen.Weave.icon,
-                            Screen.Subscription.route to Screen.Subscription.icon,
-                            Screen.About.route to Screen.About.icon
+                            stringResource(id = Screen.Weave.title) to Screen.Weave.icon,
+                            stringResource(id = Screen.Subscription.title) to Screen.Subscription.icon,
+                            stringResource(id = Screen.Setting.title) to Screen.Setting.icon
                         )
                         Surface(
                             Modifier
                                 .fillMaxWidth()
-                                .weight(1f)
+                                .padding(bottom = 80.dp)
                         ) {
                             val mainViewModel: MainViewModel = hiltViewModel()
                             navController.addOnDestinationChangedListener { controller, destination, arguments ->
-                                Logger.d(TAG, "onDestinationChanged: ${destination.label}")
                                 selectedItem = when (destination.route) {
                                     Screen.Subscription.route -> 1
-                                    Screen.About.route -> 2
+                                    Screen.Setting.route -> 2
                                     else -> 0
                                 }
                             }
@@ -124,15 +129,21 @@ class MainActivity : ComponentActivity() {
                                         }
                                     )
                                 }
-                                composable(Screen.About.route) {
-                                    AboutScreen()
+                                composable(Screen.Setting.route) {
+                                    SettingScreen()
                                 }
                             }
                         }
-                        NavigationBar(
+                        Row(
                             Modifier
-                                .fillMaxWidth()
-                                .height(80.dp)
+                                .fillMaxWidth(0.6f)
+                                .padding(bottom = 16.dp)
+                                .shadow(1.dp, shape = MaterialTheme.shapes.large)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceContainer,
+                                    shape = MaterialTheme.shapes.large
+                                )
+                                .align(Alignment.BottomCenter)
                         ) {
                             items.forEachIndexed { index, item ->
                                 NavigationBarItem(
@@ -143,7 +154,7 @@ class MainActivity : ComponentActivity() {
                                             modifier = Modifier.size(24.dp)
                                         )
                                     },
-                                    label = { Text(item.first) },
+                                    label = { Text(item.first, style = MaterialTheme.typography.bodySmall, maxLines = 1) },
                                     selected = selectedItem == index,
                                     onClick = {
                                         when (index) {
@@ -156,14 +167,14 @@ class MainActivity : ComponentActivity() {
 
                                             1 -> {
                                                 navController.navigate(Screen.Subscription.route) {
-                                                    popUpTo(Screen.About.route) {
+                                                    popUpTo(Screen.Setting.route) {
                                                         inclusive = true
                                                     }
                                                 }
                                             }
 
                                             2 -> {
-                                                navController.navigate(Screen.About.route) {
+                                                navController.navigate(Screen.Setting.route) {
                                                     popUpTo(Screen.Subscription.route) {
                                                         inclusive = true
                                                     }

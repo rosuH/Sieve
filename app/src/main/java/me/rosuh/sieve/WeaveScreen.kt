@@ -34,6 +34,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
@@ -73,6 +75,7 @@ import me.rosuh.sieve.model.RuleRepo
 import me.rosuh.sieve.model.database.StableRuleSubscriptionWithRules
 import me.rosuh.sieve.utils.Logger
 import me.rosuh.sieve.utils.calculateDuration
+import me.rosuh.sieve.utils.calculateDurationComposable
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,7 +104,7 @@ fun WeaveScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("制作列表")
+                    Text(stringResource(id = R.string.tab_home))
                 }
             )
         },
@@ -127,12 +130,12 @@ fun WeaveScreen(
                 Column(modifier = rowModifier) {
                     val paddingStart = 16.dp
                     Text(
-                        "规则",
+                        stringResource(id = R.string.tab_home_title_rule),
                         modifier = titleModifier,
                         style = MaterialTheme.typography.titleLarge
                     )
                     Text(
-                        text = "对 APP 列表应用指定规则，过滤后即可导出",
+                        text = stringResource(id = R.string.tab_home_title_rule_desc),
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(start = paddingStart, top = 8.dp)
                     )
@@ -141,7 +144,7 @@ fun WeaveScreen(
                             modifier = Modifier.animateContentSize(),
                             onClick = { onChangeMode(RuleMode.ByPass) },
                             label = {
-                                Text(RuleMode.ByPass.value)
+                                Text(stringResource(id = R.string.tab_home_title_rule_bypass))
                             },
                             border = FilterChipDefaults.filterChipBorder(
                                 enabled = true,
@@ -167,7 +170,7 @@ fun WeaveScreen(
                                 .animateContentSize(),
                             onClick = { onChangeMode(RuleMode.Proxy) },
                             label = {
-                                Text(RuleMode.Proxy.value)
+                                Text(stringResource(id = R.string.tab_home_title_rule_proxy))
                             },
                             border = FilterChipDefaults.filterChipBorder(
                                 enabled = true,
@@ -191,7 +194,7 @@ fun WeaveScreen(
                     }
                     Row(modifier = Modifier.padding(start = paddingStart, top = 8.dp)) {
                         Text(
-                            text = "已启用订阅："
+                            text = stringResource(id = R.string.tab_home_title_rule_enable_subscription)
                         )
                         Spacer(modifier = Modifier.size(2.dp))
                         AnimatedContent(
@@ -205,7 +208,7 @@ fun WeaveScreen(
                     }
                     Row(modifier = Modifier.padding(start = paddingStart, top = 8.dp)) {
                         Text(
-                            text = "规则总计："
+                            text = stringResource(id = R.string.tab_home_title_rule_total)
                         )
                         Spacer(modifier = Modifier.size(2.dp))
                         AnimatedContent(
@@ -221,7 +224,7 @@ fun WeaveScreen(
                 Column(modifier = rowModifier) {
                     val context = LocalContext.current
                     Text(
-                        "导出列表",
+                        stringResource(id = R.string.tab_home_title_export),
                         modifier = titleModifier,
                         style = MaterialTheme.typography.titleLarge
                     )
@@ -268,7 +271,7 @@ fun WeaveScreen(
                         when {
                             weaveState.isExporting -> {
                                 Text(
-                                    text = "导出中",
+                                    text = stringResource(id = R.string.tab_home_title_exporting),
                                     modifier = modifier,
                                     style = MaterialTheme.typography.labelMedium
                                 )
@@ -276,7 +279,7 @@ fun WeaveScreen(
 
                             weaveState.isExportFailed -> {
                                 Text(
-                                    text = "失败, ${weaveState.exportMsg}",
+                                    text = "${stringResource(id = R.string.tab_home_title_export_failed)}, ${weaveState.exportMsg}",
                                     modifier = modifier,
                                     style = MaterialTheme.typography.labelMedium
                                 )
@@ -284,14 +287,13 @@ fun WeaveScreen(
 
                             weaveState.isExportSuccess -> {
                                 Text(
-                                    text = "成功, ${weaveState.exportMsg}",
+                                    text = "${stringResource(id = R.string.tab_home_title_export_success)}, ${weaveState.exportMsg}",
                                     modifier = modifier,
                                     style = MaterialTheme.typography.labelMedium
                                 )
                                 val clipboardManager = LocalClipboardManager.current
                                 val textToCopy by remember { mutableStateOf(weaveState.exportResult) }
                                 clipboardManager.setText(AnnotatedString(textToCopy))
-                                Logger.d("WeaveScreen", "Copy to clipboard: $textToCopy")
                             }
                         }
                     }
@@ -384,7 +386,10 @@ private fun AppListCard(
                     shape = CircleShape,
                 ) {
                     Text(
-                        text = "共安装${installPackageSize}个应用",
+                        text = stringResource(
+                            id = R.string.tab_home_title_install_size,
+                            installPackageSize
+                        ),
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.padding(
                             start = 16.dp,
@@ -400,7 +405,7 @@ private fun AppListCard(
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
                         Text(
-                            text = "扫描时间：${latestScanTime.calculateDuration()}",
+                            text = "${stringResource(id = R.string.tab_home_title_scan_time)}：${latestScanTime.calculateDurationComposable()}",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(
                                 start = 12.dp,
