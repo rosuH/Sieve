@@ -1,6 +1,7 @@
-package me.rosuh.sieve
+package me.rosuh.sieve.ui.screen
 
 import androidx.navigation.NamedNavArgument
+import me.rosuh.sieve.R
 
 sealed class Screen(
     val route: String,

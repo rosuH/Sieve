@@ -3,6 +3,7 @@ package me.rosuh.sieve
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
+import me.rosuh.sieve.model.AppPackageListModel
 import me.rosuh.sieve.model.RulePattern
 import org.junit.Assert.assertTrue
 import org.junit.Before

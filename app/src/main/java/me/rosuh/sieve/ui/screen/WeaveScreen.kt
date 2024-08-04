@@ -1,4 +1,4 @@
-package me.rosuh.sieve
+package me.rosuh.sieve.ui.screen
 
 import android.content.Context
 import android.content.pm.PackageManager
@@ -34,7 +34,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -62,19 +61,18 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import me.rosuh.sieve.MainViewModel
+import me.rosuh.sieve.R
 import me.rosuh.sieve.model.AppInfo
 import me.rosuh.sieve.model.AppList
 import me.rosuh.sieve.model.RuleMode
 import me.rosuh.sieve.model.RuleRepo
 import me.rosuh.sieve.model.database.StableRuleSubscriptionWithRules
-import me.rosuh.sieve.utils.Logger
-import me.rosuh.sieve.utils.calculateDuration
 import me.rosuh.sieve.utils.calculateDurationComposable
 
 
@@ -478,7 +476,7 @@ private fun AppGrid(
         state = lazyGridState,
         userScrollEnabled = false,
     ) {
-        items(stableUserPackageList, key = { it.appName }) { appInfo ->
+        items(stableUserPackageList, key = { it.packageName }) { appInfo ->
             AsyncImage(
                 model = appInfo.applicationInfo.loadIcon(pm),
                 contentDescription = appInfo.appName,

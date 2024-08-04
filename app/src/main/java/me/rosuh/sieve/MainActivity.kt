@@ -33,8 +33,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
+import me.rosuh.sieve.ui.screen.Screen
+import me.rosuh.sieve.ui.screen.SettingScreen
+import me.rosuh.sieve.ui.screen.SubscriptionScreen
+import me.rosuh.sieve.ui.screen.WeaveScreen
 import me.rosuh.sieve.ui.theme.AppTheme
-import me.rosuh.sieve.utils.Logger
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

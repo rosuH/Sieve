@@ -1,4 +1,4 @@
-package me.rosuh.sieve
+package me.rosuh.sieve.model
 
 
 import kotlinx.serialization.SerialName
