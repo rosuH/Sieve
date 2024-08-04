@@ -1,7 +1,11 @@
 package me.rosuh.sieve.model
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import androidx.collection.LruCache
+import androidx.core.content.ContextCompat.startActivity
 import arrow.core.Either
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -31,8 +35,47 @@ class RuleRepo @Inject constructor(
     val httpClient: HttpClient,
 ) {
     sealed class ExportType {
-        data object Surfboard : ExportType()
-        data object NekoBoxAndroid : ExportType()
+        abstract fun jump(context: Context)
+
+        data object Surfboard : ExportType() {
+            override fun jump(context: Context) {
+                val packageName = "com.getsurfboard"
+                val activityName = "com.getsurfboard.ui.activity.MainActivity"
+                val intent = Intent(Intent.ACTION_MAIN).apply {
+                    setComponent(ComponentName(packageName, activityName))
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                kotlin.runCatching {
+                    context.startActivity(intent)
+                }
+            }
+        }
+        data object NekoBoxAndroid : ExportType() {
+            override fun jump(context: Context) {
+                val packageName = "moe.nb4a"
+                val activityName = "io.nekohasekai.sagernet.ui.MainActivity"
+                val intent = Intent(Intent.ACTION_MAIN).apply {
+                    setComponent(ComponentName(packageName, activityName))
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                kotlin.runCatching {
+                    context.startActivity(intent)
+                }
+            }
+        }
+        data object ClashMetaForAndroid : ExportType() {
+            override fun jump(context: Context) {
+                val packageName = "com.github.metacubex.clash.meta"
+                val activityName = "com.github.kr328.clash.MainActivity"
+                val intent = Intent(Intent.ACTION_MAIN).apply {
+                    setComponent(ComponentName(packageName, activityName))
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                kotlin.runCatching {
+                    context.startActivity(intent)
+                }
+            }
+        }
     }
 
     private val rulePatternCache by lazy { LruCache<Rule, RulePattern>(1000) }
@@ -136,6 +179,12 @@ class RuleRepo @Inject constructor(
                 }
                 "$flag\n" + list.joinToString("\n") {
                     it.packageName
+                }
+            }
+
+            ExportType.ClashMetaForAndroid -> {
+                list.joinToString("\n") {
+                    "$it.packageName"
                 }
             }
         }

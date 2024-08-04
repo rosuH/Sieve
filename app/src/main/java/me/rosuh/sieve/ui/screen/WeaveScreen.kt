@@ -238,6 +238,22 @@ fun WeaveScreen(
                                 onExport(
                                     installPackageList,
                                     weaveState.mode,
+                                    RuleRepo.ExportType.ClashMetaForAndroid
+                                )
+                            }) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_cmfa),
+                                contentDescription = "ClashMetaForAndroid",
+                                modifier = iconModifier
+                            )
+                        }
+                        IconButton(
+                            modifier = buttonModifier.size(48.dp),
+                            enabled = exportEnable,
+                            onClick = {
+                                onExport(
+                                    installPackageList,
+                                    weaveState.mode,
                                     RuleRepo.ExportType.Surfboard
                                 )
                             }) {
@@ -292,6 +308,7 @@ fun WeaveScreen(
                                 val clipboardManager = LocalClipboardManager.current
                                 val textToCopy by remember { mutableStateOf(weaveState.exportResult) }
                                 clipboardManager.setText(AnnotatedString(textToCopy))
+                                weaveState.exportType.jump(context)
                             }
                         }
                     }
@@ -320,6 +337,7 @@ class WeaveState(
     userPackageList: AppList = AppList.empty,
     subscription: StableRuleSubscriptionWithRules = StableRuleSubscriptionWithRules.empty,
     exportResult: String = "",
+    exportType: RuleRepo.ExportType = RuleRepo.ExportType.ClashMetaForAndroid
 ) {
 
     var isInit by mutableStateOf(isInit)
@@ -335,6 +353,7 @@ class WeaveState(
     var mode by mutableStateOf(mode)
     var subscription by mutableStateOf(subscription)
     var exportResult by mutableStateOf(exportResult)
+    var exportType by mutableStateOf(exportType)
 
     private var _installPackageList = MutableStateFlow(installList)
     private var _userPackageList = MutableStateFlow(userPackageList)

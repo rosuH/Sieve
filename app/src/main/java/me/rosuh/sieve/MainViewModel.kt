@@ -143,6 +143,7 @@ class MainViewModel @Inject constructor(
                         isExportFailed = false
                         isExportSuccess = false
                         exportMsg = "导出中..."
+                        exportType = action.exportType
                     }
                     kotlin.runCatching {
                         repo.exportApplicationList(action.packageList, action.mode, action.exportType)
