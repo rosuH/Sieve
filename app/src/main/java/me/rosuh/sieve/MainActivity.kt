@@ -31,13 +31,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import me.rosuh.sieve.ui.screen.Screen
 import me.rosuh.sieve.ui.screen.SettingScreen
 import me.rosuh.sieve.ui.screen.SubscriptionScreen
-import me.rosuh.sieve.ui.screen.WeaveScreen
+import me.rosuh.sieve.ui.screen.HomeScreen
 import me.rosuh.sieve.ui.theme.AppTheme
 
 @AndroidEntryPoint
@@ -59,7 +58,7 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.fillMaxSize()) {
                         var selectedItem by remember { mutableIntStateOf(0) }
                         val items = listOf(
-                            stringResource(id = Screen.Weave.title) to Screen.Weave.icon,
+                            stringResource(id = Screen.Home.title) to Screen.Home.icon,
                             stringResource(id = Screen.Subscription.title) to Screen.Subscription.icon,
                             stringResource(id = Screen.Setting.title) to Screen.Setting.icon
                         )
@@ -80,10 +79,10 @@ class MainActivity : ComponentActivity() {
                             }
                             NavHost(
                                 navController = navController,
-                                startDestination = Screen.Weave.route
+                                startDestination = Screen.Home.route
                             ) {
-                                composable(Screen.Weave.route) { backStackEntry ->
-                                    WeaveScreen(
+                                composable(Screen.Home.route) { backStackEntry ->
+                                    HomeScreen(
                                         mainViewModel,
                                         onScan = onScan,
                                         onChangeMode = { mode ->
@@ -161,7 +160,7 @@ class MainActivity : ComponentActivity() {
                         }
                         when (selectedItem) {
                             0 -> {
-                                navController.navigate(Screen.Weave.route) {
+                                navController.navigate(Screen.Home.route) {
                                     popUpTo(Screen.Subscription.route) {
                                         inclusive = true
                                     }

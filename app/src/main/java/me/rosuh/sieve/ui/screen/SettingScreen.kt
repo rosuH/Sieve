@@ -3,6 +3,7 @@ package me.rosuh.sieve.ui.screen
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +28,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -106,6 +108,15 @@ fun SettingScreen() {
                             "https://raw.githubusercontent.com/rosuH/Sieve/master/PRIVACY_CN.md"
                         )
                     })
+                AboutItem(
+                    title = "Illustrations LICENSE FROM CocoMaterial",
+                    icon = R.drawable.ic_privacy,
+                    onClick = {
+                        openUrlInBrowser(
+                            ctx,
+                            "https://cocomaterial.com/license"
+                        )
+                    })
             }
 
             Spacer(
@@ -179,7 +190,7 @@ fun AboutItem(
         Text(text = title, style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.weight(1f))
         if (value == null) {
-            Icon(painterResource(id = R.drawable.ic_right), null)
+            Icon(painterResource(id = R.drawable.ic_right), null, modifier = Modifier.rotate(85f).size(36.dp))
         } else {
             Text(
                 text = value,

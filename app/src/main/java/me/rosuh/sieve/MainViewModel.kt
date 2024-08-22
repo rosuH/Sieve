@@ -18,7 +18,7 @@ import me.rosuh.sieve.model.AppList
 import me.rosuh.sieve.model.database.RuleSubscriptionWithRules
 import me.rosuh.sieve.model.database.StableRuleSubscriptionWithRules
 import me.rosuh.sieve.ui.screen.SubscriptionManagerState
-import me.rosuh.sieve.ui.screen.WeaveState
+import me.rosuh.sieve.ui.screen.HomeState
 import me.rosuh.sieve.utils.Logger
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import javax.inject.Inject
@@ -53,7 +53,7 @@ class MainViewModel @Inject constructor(
 
     private val _eventChannel: Channel<Event> = Channel(BUFFERED)
 
-    val weaveState: WeaveState = WeaveState()
+    val homeState: HomeState = HomeState()
 
     val subscriptionManagerState = SubscriptionManagerState()
 
@@ -65,8 +65,8 @@ class MainViewModel @Inject constructor(
                     viewModelScope.launch(Dispatchers.IO) {
                         repo.getAllActiveWithRuleFlow().collect {
                             val list =
-                                it.filter { sub -> sub.ruleSubscription.ruleMode == weaveState.mode }
-                            updateWeaveState {
+                                it.filter { sub -> sub.ruleSubscription.ruleMode == homeState.mode }
+                            updatehomeState {
                                 updateSubscription(StableRuleSubscriptionWithRules(list))
                             }
                         }
@@ -89,7 +89,7 @@ class MainViewModel @Inject constructor(
                     }
                 }
                 is UIAction.Scan -> {
-                    updateWeaveState {
+                    updatehomeState {
                         isScanningPackage = true
                     }
                     withContext(Dispatchers.IO) {
@@ -102,20 +102,20 @@ class MainViewModel @Inject constructor(
                         }?.groupBy {
                             it.isUserApp
                         }?.let {
-                            updateWeaveState {
+                            updatehomeState {
                                 isScanningPackage = false
                                 latestScanTime = System.currentTimeMillis()
                             }
-                            weaveState.updateInstallPackageList((it[true] ?: emptyList()) + (it[false] ?: emptyList()))
-                            weaveState.updateUserPackageList(AppList(it[true] ?: emptyList()))
+                            homeState.updateInstallPackageList((it[true] ?: emptyList()) + (it[false] ?: emptyList()))
+                            homeState.updateUserPackageList(AppList(it[true] ?: emptyList()))
                         } ?: run {
                             _eventChannel.send(Event.ScanFailed("请到设置中授予「获取应用列表」权限"))
-                            updateWeaveState {
+                            updatehomeState {
                                 isScanningPackage = false
                                 latestScanTime = System.currentTimeMillis()
                             }
-                            weaveState.updateInstallPackageList(emptyList())
-                            weaveState.updateUserPackageList(AppList(emptyList()))
+                            homeState.updateInstallPackageList(emptyList())
+                            homeState.updateUserPackageList(AppList(emptyList()))
                         }
                     }
                 }
@@ -123,7 +123,7 @@ class MainViewModel @Inject constructor(
                 is UIAction.ChangeMode -> {
                     withContext(Dispatchers.IO) {
                         val list = repo.getAllActiveWithRule(action.ruleMode)
-                        updateWeaveState {
+                        updatehomeState {
                             mode = action.ruleMode
                             subscription = StableRuleSubscriptionWithRules(list)
                         }
@@ -131,14 +131,14 @@ class MainViewModel @Inject constructor(
                 }
 
                 is UIAction.Filter -> {
-                    updateWeaveState {
+                    updatehomeState {
                         isFiltering = true
                     }
                     repo.filter(action.packageList, action.mode)
                 }
 
                 is UIAction.Export -> {
-                    updateWeaveState {
+                    updatehomeState {
                         isExporting = true
                         isExportFailed = false
                         isExportSuccess = false
@@ -149,7 +149,7 @@ class MainViewModel @Inject constructor(
                         repo.exportApplicationList(action.packageList, action.mode, action.exportType)
                     }.fold(
                         onSuccess = {
-                            updateWeaveState {
+                            updatehomeState {
                                 isExporting = false
                                 isExportSuccess = true
                                 isExportFailed = false
@@ -158,7 +158,7 @@ class MainViewModel @Inject constructor(
                             }
                         },
                         onFailure = { throwable ->
-                            updateWeaveState {
+                            updatehomeState {
                                 isExporting = false
                                 isExportSuccess = false
                                 isExportFailed = true
@@ -222,10 +222,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private suspend fun updateWeaveState(reduce: suspend WeaveState.() -> Unit) {
+    private suspend fun updatehomeState(reduce: suspend HomeState.() -> Unit) {
         withContext(Dispatchers.Main.immediate) {
-            weaveState.reduce()
-            weaveState.isInit = false
+            homeState.reduce()
+            homeState.isInit = false
         }
     }
 

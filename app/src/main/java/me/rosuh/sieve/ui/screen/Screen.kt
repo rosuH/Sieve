@@ -7,7 +7,7 @@ sealed class Screen(
     val route: String,
     val navArguments: List<NamedNavArgument> = emptyList()
 ) {
-    data object Weave : Screen("weave") {
+    data object Home : Screen("home") {
         val icon by lazy { R.drawable.ic_home_nav }
         val title by lazy { R.string.tab_home }
     }

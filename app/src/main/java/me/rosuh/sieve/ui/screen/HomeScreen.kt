@@ -78,19 +78,19 @@ import me.rosuh.sieve.utils.calculateDurationComposable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WeaveScreen(
+fun HomeScreen(
     viewModel: MainViewModel,
     onScan: () -> Unit = {},
     onChangeMode: (mode: RuleMode) -> Unit = {},
     onFilter: (List<AppInfo>, mode: RuleMode) -> Unit = { _, _ -> },
     onExport: (List<AppInfo>, mode: RuleMode, exportType: RuleRepo.ExportType) -> Unit = { _, _, _ -> },
 ) {
-    val weaveState = remember {
-        viewModel.weaveState
+    val homeState = remember {
+        viewModel.homeState
     }
-    val installPackageList by weaveState.installPackageList.collectAsStateWithLifecycle()
-    val userPackageList by weaveState.userPackageList.collectAsStateWithLifecycle()
-    val isInit = weaveState.isInit
+    val installPackageList by homeState.installPackageList.collectAsStateWithLifecycle()
+    val userPackageList by homeState.userPackageList.collectAsStateWithLifecycle()
+    val isInit = homeState.isInit
     val onScanRemember by rememberUpdatedState(onScan)
     LaunchedEffect(isInit) {
         if (isInit) {
@@ -122,7 +122,7 @@ fun WeaveScreen(
                 AppListCard(
                     installPackageSize = installPackageList.size,
                     userPackageList,
-                    latestScanTime = weaveState.latestScanTime,
+                    latestScanTime = homeState.latestScanTime,
                     onScan = onScanRemember,
                 )
                 Column(modifier = rowModifier) {
@@ -146,13 +146,13 @@ fun WeaveScreen(
                             },
                             border = FilterChipDefaults.filterChipBorder(
                                 enabled = true,
-                                selected = weaveState.mode == RuleMode.ByPass
+                                selected = homeState.mode == RuleMode.ByPass
                             ),
-                            selected = weaveState.mode == RuleMode.ByPass,
+                            selected = homeState.mode == RuleMode.ByPass,
                             leadingIcon = {
-                                if (weaveState.mode == RuleMode.ByPass) {
+                                if (homeState.mode == RuleMode.ByPass) {
                                     Icon(
-                                        imageVector = Icons.Filled.Done,
+                                        painter = painterResource(id = R.drawable.ic_check),
                                         contentDescription = "Selected Bypass Icon",
                                         modifier = Modifier.size(FilterChipDefaults.IconSize)
                                     )
@@ -172,13 +172,13 @@ fun WeaveScreen(
                             },
                             border = FilterChipDefaults.filterChipBorder(
                                 enabled = true,
-                                weaveState.mode == RuleMode.Proxy
+                                homeState.mode == RuleMode.Proxy
                             ),
-                            selected = weaveState.mode == RuleMode.Proxy,
-                            leadingIcon = if (weaveState.mode == RuleMode.Proxy) {
+                            selected = homeState.mode == RuleMode.Proxy,
+                            leadingIcon = if (homeState.mode == RuleMode.Proxy) {
                                 {
                                     Icon(
-                                        imageVector = Icons.Filled.Done,
+                                        painter = painterResource(id = R.drawable.ic_check),
                                         contentDescription = "Selected Proxy Icon",
                                         modifier = Modifier.size(FilterChipDefaults.IconSize)
                                     )
@@ -196,7 +196,7 @@ fun WeaveScreen(
                         )
                         Spacer(modifier = Modifier.size(2.dp))
                         AnimatedContent(
-                            targetState = weaveState.subscription.size,
+                            targetState = homeState.subscription.size,
                             label = "subscriptionSize"
                         ) { targetState ->
                             Text(
@@ -210,7 +210,7 @@ fun WeaveScreen(
                         )
                         Spacer(modifier = Modifier.size(2.dp))
                         AnimatedContent(
-                            targetState = weaveState.subscription.sumOf { it.ruleList.size },
+                            targetState = homeState.subscription.sumOf { it.ruleList.size },
                             label = "subscriptionSize"
                         ) { targetState ->
                             Text(
@@ -226,7 +226,7 @@ fun WeaveScreen(
                         modifier = titleModifier,
                         style = MaterialTheme.typography.titleLarge
                     )
-                    val exportEnable = weaveState.isExporting.not()
+                    val exportEnable = homeState.isExporting.not()
                     val iconModifier = Modifier
                         .size(40.dp)
                         .clip(RoundedCornerShape(8.dp))
@@ -237,7 +237,7 @@ fun WeaveScreen(
                             onClick = {
                                 onExport(
                                     installPackageList,
-                                    weaveState.mode,
+                                    homeState.mode,
                                     RuleRepo.ExportType.ClashMetaForAndroid
                                 )
                             }) {
@@ -253,7 +253,7 @@ fun WeaveScreen(
                             onClick = {
                                 onExport(
                                     installPackageList,
-                                    weaveState.mode,
+                                    homeState.mode,
                                     RuleRepo.ExportType.Surfboard
                                 )
                             }) {
@@ -269,7 +269,7 @@ fun WeaveScreen(
                             onClick = {
                                 onExport(
                                     installPackageList,
-                                    weaveState.mode,
+                                    homeState.mode,
                                     RuleRepo.ExportType.NekoBoxAndroid
                                 )
                             }) {
@@ -283,7 +283,7 @@ fun WeaveScreen(
                     Row(modifier = Modifier.padding(top = 8.dp)) {
                         val modifier = Modifier.padding(start = 8.dp)
                         when {
-                            weaveState.isExporting -> {
+                            homeState.isExporting -> {
                                 Text(
                                     text = stringResource(id = R.string.tab_home_title_exporting),
                                     modifier = modifier,
@@ -291,24 +291,24 @@ fun WeaveScreen(
                                 )
                             }
 
-                            weaveState.isExportFailed -> {
+                            homeState.isExportFailed -> {
                                 Text(
-                                    text = "${stringResource(id = R.string.tab_home_title_export_failed)}, ${weaveState.exportMsg}",
+                                    text = "${stringResource(id = R.string.tab_home_title_export_failed)}, ${homeState.exportMsg}",
                                     modifier = modifier,
                                     style = MaterialTheme.typography.labelMedium
                                 )
                             }
 
-                            weaveState.isExportSuccess -> {
+                            homeState.isExportSuccess -> {
                                 Text(
-                                    text = "${stringResource(id = R.string.tab_home_title_export_success)}, ${weaveState.exportMsg}",
+                                    text = "${stringResource(id = R.string.tab_home_title_export_success)}, ${homeState.exportMsg}",
                                     modifier = modifier,
                                     style = MaterialTheme.typography.labelMedium
                                 )
                                 val clipboardManager = LocalClipboardManager.current
-                                val textToCopy by remember { mutableStateOf(weaveState.exportResult) }
+                                val textToCopy by remember { mutableStateOf(homeState.exportResult) }
                                 clipboardManager.setText(AnnotatedString(textToCopy))
-                                weaveState.exportType.jump(context)
+                                homeState.exportType.jump(context)
                             }
                         }
                     }
@@ -321,7 +321,7 @@ fun WeaveScreen(
 
 
 @Stable
-class WeaveState(
+class HomeState(
     isInit: Boolean = true,
     isScanningPackage: Boolean = false,
     isFiltering: Boolean = false,
@@ -360,17 +360,17 @@ class WeaveState(
     val installPackageList: StateFlow<AppList> = _installPackageList
     val userPackageList: StateFlow<AppList> = _userPackageList
 
-    suspend fun updateInstallPackageList(appInfos: List<AppInfo>): WeaveState {
+    suspend fun updateInstallPackageList(appInfos: List<AppInfo>): HomeState {
         _installPackageList.emit(AppList(appInfos))
         return this
     }
 
-    suspend fun updateUserPackageList(appInfos: List<AppInfo>): WeaveState {
+    suspend fun updateUserPackageList(appInfos: List<AppInfo>): HomeState {
         _userPackageList.emit(AppList(appInfos))
         return this
     }
 
-    suspend fun updateSubscription(subscription: StableRuleSubscriptionWithRules): WeaveState {
+    suspend fun updateSubscription(subscription: StableRuleSubscriptionWithRules): HomeState {
         this.subscription = subscription
         return this
     }
@@ -439,7 +439,8 @@ private fun AppListCard(
             }, modifier = Modifier.align(Alignment.TopEnd)) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_refresh),
-                    contentDescription = "扫描"
+                    contentDescription = "扫描",
+                    modifier = Modifier.size(28.dp)
                 )
             }
         }

@@ -241,7 +241,7 @@ fun SubscriptionScreen(
                                 }
                                 Image(
                                     painter = painterResource(painter),
-                                    modifier = Modifier.size(56.dp),
+                                    modifier = Modifier.size(78.dp),
                                     contentDescription = "empty"
                                 )
                                 Text(
