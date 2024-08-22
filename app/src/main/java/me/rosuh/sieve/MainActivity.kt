@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import me.rosuh.sieve.ui.screen.Screen
@@ -68,11 +69,13 @@ class MainActivity : ComponentActivity() {
                                 .padding(bottom = 80.dp)
                         ) {
                             val mainViewModel: MainViewModel = hiltViewModel()
-                            navController.addOnDestinationChangedListener { controller, destination, arguments ->
-                                selectedItem = when (destination.route) {
-                                    Screen.Subscription.route -> 1
-                                    Screen.Setting.route -> 2
-                                    else -> 0
+                            val onScan = remember {
+                                {
+                                    mainViewModel.processUIAction(
+                                        MainViewModel.UIAction.Scan(
+                                            packageManager
+                                        )
+                                    )
                                 }
                             }
                             NavHost(
@@ -80,15 +83,6 @@ class MainActivity : ComponentActivity() {
                                 startDestination = Screen.Weave.route
                             ) {
                                 composable(Screen.Weave.route) { backStackEntry ->
-                                    val onScan = remember {
-                                        {
-                                            mainViewModel.processUIAction(
-                                                MainViewModel.UIAction.Scan(
-                                                    packageManager
-                                                )
-                                            )
-                                        }
-                                    }
                                     WeaveScreen(
                                         mainViewModel,
                                         onScan = onScan,
@@ -160,34 +154,46 @@ class MainActivity : ComponentActivity() {
                                     label = { Text(item.first, style = MaterialTheme.typography.bodySmall, maxLines = 1) },
                                     selected = selectedItem == index,
                                     onClick = {
-                                        when (index) {
-                                            0 -> {
-                                                navController.popBackStack(
-                                                    Screen.Weave.route,
-                                                    false
-                                                )
-                                            }
-
-                                            1 -> {
-                                                navController.navigate(Screen.Subscription.route) {
-                                                    popUpTo(Screen.Setting.route) {
-                                                        inclusive = true
-                                                    }
-                                                }
-                                            }
-
-                                            2 -> {
-                                                navController.navigate(Screen.Setting.route) {
-                                                    popUpTo(Screen.Subscription.route) {
-                                                        inclusive = true
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        selectedItem = index
                                     }
                                 )
                             }
                         }
+                        when (selectedItem) {
+                            0 -> {
+                                navController.navigate(Screen.Weave.route) {
+                                    popUpTo(Screen.Subscription.route) {
+                                        inclusive = true
+                                    }
+                                    popUpTo(Screen.Setting.route) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+
+                            1 -> {
+                                navController.navigate(Screen.Subscription.route) {
+                                    popUpTo(Screen.Setting.route) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+
+                            2 -> {
+                                navController.navigate(Screen.Setting.route) {
+                                    popUpTo(Screen.Subscription.route) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        }
+
                     }
                 }
             }

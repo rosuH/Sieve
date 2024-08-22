@@ -2,6 +2,7 @@ package me.rosuh.sieve.ui.screen
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -233,8 +234,13 @@ fun SubscriptionScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
+                                val painter = if (isSystemInDarkTheme()) {
+                                    R.drawable.ic_empty_placeholder_dark
+                                } else {
+                                    R.drawable.ic_empty_placeholder_light
+                                }
                                 Image(
-                                    painter = painterResource(id = R.drawable.ic_empty_placeholder),
+                                    painter = painterResource(painter),
                                     modifier = Modifier.size(56.dp),
                                     contentDescription = "empty"
                                 )
