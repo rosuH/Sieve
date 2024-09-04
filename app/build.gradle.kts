@@ -5,6 +5,20 @@ plugins {
     alias(libs.plugins.kotlinKsp)
     alias(libs.plugins.daggerHiltAndroid)
 }
+/**
+ * read version from gradle.properties
+ */
+val majorVersion by properties
+val minorVersion by properties
+val patchVersion by properties
+
+fun getVersionCode(): Int {
+    return (majorVersion as String).toInt() * 10000 + (minorVersion as String).toInt() * 100 + (patchVersion as String).toInt()
+}
+
+fun getVersionName(): String {
+    return "$majorVersion.$minorVersion.$patchVersion"
+}
 
 android {
     namespace = "me.rosuh.sieve"
@@ -14,8 +28,8 @@ android {
         applicationId = "me.rosuh.sieve"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = getVersionCode()
+        versionName = getVersionName()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
