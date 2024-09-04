@@ -9,7 +9,7 @@ on:
   # on merge to master
   push:
       branches:
-      - master
+      - main
       paths-ignore:
         - '.idea/**'
         - '.gitattributes'
