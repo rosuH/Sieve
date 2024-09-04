@@ -1,5 +1,6 @@
 package me.rosuh.sieve.ui.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -38,6 +39,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.currentCompositionLocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +50,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -71,6 +74,8 @@ class SubscriptionManagerState(
     isLoadingBypass: Boolean = false,
     isLoadingProxy: Boolean = false,
     isAddSubscription: Boolean = false,
+    isAddSubscriptionFailed: Boolean = false,
+    addSubscriptionFailedTips: String = "",
     addSubscriptionCheckFailed: Boolean = false,
     byPassSubscriptionList: List<RuleSubscriptionWithRules> = emptyList(),
     proxySubscriptionList: List<RuleSubscriptionWithRules> = emptyList(),
@@ -79,6 +84,8 @@ class SubscriptionManagerState(
     var isLoadingBypass: Boolean by mutableStateOf(isLoadingBypass)
     var isLoadingProxy: Boolean by mutableStateOf(isLoadingProxy)
     var isAddSubscription: Boolean by mutableStateOf(isAddSubscription)
+    var isAddSubscriptionFailed: Boolean by mutableStateOf(isAddSubscription)
+    var addSubscriptionFailedTips: String by mutableStateOf(addSubscriptionFailedTips)
     var addSubscriptionCheckFailed: Boolean by mutableStateOf(addSubscriptionCheckFailed)
 
     private var _byPassSubscriptionList = MutableStateFlow(byPassSubscriptionList)
@@ -122,6 +129,18 @@ fun SubscriptionScreen(
             }
         )
     }
+    val context = LocalContext.current
+    LaunchedEffect(subscriptionManagerState.isAddSubscriptionFailed) {
+        if (subscriptionManagerState.isAddSubscriptionFailed) {
+            Toast.makeText(
+                context,
+                subscriptionManagerState.addSubscriptionFailedTips,
+                Toast.LENGTH_SHORT
+            ).show()
+            // Reset the error state after showing the toast
+            viewModel.processUIAction(MainViewModel.UIAction.ResetAddSubscriptionError)
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -131,7 +150,7 @@ fun SubscriptionScreen(
             )
         },
         floatingActionButton = {
-            Button(onClick = onAddSubscription) {
+            Button(modifier = Modifier.padding(bottom = 20.dp), onClick = onAddSubscription) {
                 Text("添加订阅")
             }
         }

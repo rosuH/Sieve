@@ -20,6 +20,7 @@ import me.rosuh.sieve.model.database.StableRuleSubscriptionWithRules
 import me.rosuh.sieve.ui.screen.SubscriptionManagerState
 import me.rosuh.sieve.ui.screen.HomeState
 import me.rosuh.sieve.utils.Logger
+import me.rosuh.sieve.utils.catchIO
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import javax.inject.Inject
 
@@ -45,6 +46,7 @@ class MainViewModel @Inject constructor(
             val checked: Boolean
         ) : UIAction()
         data class SubscriptionPullToRefresh(val ruleMode: RuleMode) : UIAction()
+        data object ResetAddSubscriptionError : UIAction()
     }
 
     sealed class Event {
@@ -194,9 +196,20 @@ class MainViewModel @Inject constructor(
                             addSubscriptionCheckFailed = false
                         }
                         // add subscription
-                        repo.addSubscription(
-                            name = action.name,
-                            url = url
+                        catchIO {
+                            repo.addSubscription(
+                                name = action.name,
+                                url = url
+                            )
+                        }.fold(
+                            {
+                                updateSubscriptionManagerState {
+                                    isAddSubscriptionFailed = true
+                                    addSubscriptionFailedTips = "添加失败: ${it.message}"
+                                }
+                            },
+                            {
+                            }
                         )
                     }
                 }
@@ -216,6 +229,13 @@ class MainViewModel @Inject constructor(
                         updateSubscriptionManagerState {
                             isRefreshing = false
                         }
+                    }
+                }
+
+                UIAction.ResetAddSubscriptionError -> {
+                    updateSubscriptionManagerState {
+                        addSubscriptionCheckFailed = false
+                        isAddSubscriptionFailed = false
                     }
                 }
             }
