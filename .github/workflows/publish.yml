@@ -29,6 +29,7 @@ jobs:
         uses: dsaltares/fetch-gh-release-asset@master
         with:
           file: '*-signed.apk'
+          regex: true
       - name: List files
         run: ls -l
       - name: Find APK name
