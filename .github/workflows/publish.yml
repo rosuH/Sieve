@@ -17,18 +17,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Print Latest Release
         run: echo ${{ steps.fetchLatestRelease.outputs.release }}
-      - name: Prepare Release Artifact
+      - name: Fetch All Assets
         uses: dsaltares/fetch-gh-release-asset@master
         with:
-          file: 'app-release.aab'
-      - name: Prepare Release mapping
-        uses: dsaltares/fetch-gh-release-asset@master
-        with:
-          file: 'mapping.txt'
-      - name: Fetch signed APK
-        uses: dsaltares/fetch-gh-release-asset@master
-        with:
-          file: '.*-signed\.apk'
+          file: '.*'
           regex: true
       - name: List files
         run: ls -l
