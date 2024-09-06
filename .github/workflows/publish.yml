@@ -43,7 +43,7 @@ jobs:
       - name: List files
         run: ls -l
       - name: Send commit to telegram
-        if: success() && github.repository == 'rosuH/Sieve' && github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        if: success()
         env:
           CHANNEL_ID: ${{ secrets.TELEGRAM_TO }}
           BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
