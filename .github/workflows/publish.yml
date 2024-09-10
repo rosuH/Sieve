@@ -50,9 +50,7 @@ jobs:
           BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           COMMIT_MESSAGE: |+
             新版本已发布 🎉
-            ```
             ${{ github.event.release.body }}
-            ```
             by `${{ github.event.release.author.login }}`
             [查看完整发布说明](${{ github.event.release.html_url }})
         run: |
