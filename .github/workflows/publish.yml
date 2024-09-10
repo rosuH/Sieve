@@ -36,6 +36,7 @@ jobs:
               APK_NAME=$(ls *-signed.apk)
               echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
               echo "Found APK: $APK_NAME"
+              echo "market_path=$market_path" >> $GITHUB_OUTPUT
           else
               echo "No signed APK found in the latest release"
               exit 1
@@ -47,6 +48,7 @@ jobs:
         env:
           CHANNEL_ID: ${{ secrets.TELEGRAM_TO }}
           BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          MARKET_FILE: ${{ steps.apk-path.outputs.market_path }}
           COMMIT_MESSAGE: |+
             新版本已发布 🎉
             ```
@@ -55,10 +57,7 @@ jobs:
             更多提交细节：(${{ github.event.head_commit.url }})
         run: |
           ESCAPED=$(echo "$COMMIT_MESSAGE" | sed 's/[_*[\]()~`>#+\-=|{}.!]/\\&/g')
-          curl -v "https://api.telegram.org/bot${BOT_TOKEN}/sendMediaGroup" \
-            -F chat_id="${CHANNEL_ID}" \
-            -F "media=[{\"type\":\"document\", \"media\":\"attach://apkFile\", \"parse_mode\":\"MarkdownV2\", \"caption\":\"${ESCAPED}\"}]" \
-            -F "apkFile=@${APK_NAME}"
+          curl -v "https://api.telegram.org/bot${BOT_TOKEN}/sendMediaGroup?chat_id=${CHANNEL_ID}&media=%5B%7B%22type%22%3A%22document%22%2C%20%22media%22%3A%22attach%3A%2F%2FmarketRelease%22%2C%22parse_mode%22%3A%22MarkdownV2%22%2C%22caption%22:${ESCAPED}%7D%5D" -F marketRelease="@$MARKET_FILE"
       
       # - name: Upload Android Release to Play Store
       #   uses: r0adkll/upload-google-play@v1.1.3
