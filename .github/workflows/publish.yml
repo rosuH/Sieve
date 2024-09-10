@@ -26,6 +26,7 @@ jobs:
         with:
           file: 'mapping.txt'
       - name: Fetch signed APK
+        id: apk-path
         run: |
           LATEST_RELEASE=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest)
           APK_URL=$(echo "$LATEST_RELEASE" | sed -n 's/.*"browser_download_url": "\([^"]*-signed\.apk\)".*/\1/p')
