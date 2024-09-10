@@ -34,12 +34,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.currentCompositionLocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -49,7 +48,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -70,7 +68,8 @@ import me.rosuh.sieve.utils.calculateDuration
 
 @Stable
 class SubscriptionManagerState(
-    isRefreshing: Boolean = true,
+    isProxyModeRefreshing: Boolean = false,
+    isBypassModeRefreshing: Boolean = false,
     isLoadingBypass: Boolean = false,
     isLoadingProxy: Boolean = false,
     isAddSubscription: Boolean = false,
@@ -80,7 +79,8 @@ class SubscriptionManagerState(
     byPassSubscriptionList: List<RuleSubscriptionWithRules> = emptyList(),
     proxySubscriptionList: List<RuleSubscriptionWithRules> = emptyList(),
 ) {
-    var isRefreshing: Boolean by mutableStateOf(isRefreshing)
+    var isProxyModeRefreshing: Boolean by mutableStateOf(isProxyModeRefreshing)
+    var isBypassModeRefreshing: Boolean by mutableStateOf(isProxyModeRefreshing)
     var isLoadingBypass: Boolean by mutableStateOf(isLoadingBypass)
     var isLoadingProxy: Boolean by mutableStateOf(isLoadingProxy)
     var isAddSubscription: Boolean by mutableStateOf(isAddSubscription)
@@ -161,12 +161,10 @@ fun SubscriptionScreen(
         } else {
             RuleMode.Proxy
         }
-        val pullToRefreshState = rememberPullToRefreshState()
         Box(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .nestedScroll(pullToRefreshState.nestedScrollConnection)
         ) {
             val titles = listOf(RuleMode.ByPass.value, RuleMode.Proxy.value)
             val pagerState = rememberPagerState(pageCount = {
@@ -177,16 +175,6 @@ fun SubscriptionScreen(
                 // Collect from the a snapshotFlow reading the currentPage
                 snapshotFlow { pagerState.currentPage }.collect { page ->
                     selectedTabIndex = page
-                }
-            }
-            if (pullToRefreshState.isRefreshing) {
-                LaunchedEffect(true) {
-                    onPullToRefresh(mode)
-                }
-            }
-            LaunchedEffect(subscriptionManagerState.isRefreshing) {
-                if (subscriptionManagerState.isRefreshing.not()) {
-                    pullToRefreshState.endRefresh()
                 }
             }
             val indicatorPadding = PaddingValues(36.dp)
@@ -204,12 +192,6 @@ fun SubscriptionScreen(
                         indicatorPadding.calculateBottomPadding()
                 }
             }
-            PullToRefreshContainer(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(contentPadding),
-                state = pullToRefreshState
-            )
             Column(Modifier.fillMaxSize()) {
                 PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
                     titles.forEachIndexed { index, title ->
@@ -241,105 +223,118 @@ fun SubscriptionScreen(
                     } else {
                         proxySubscriptionList
                     }
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .nestedScroll(pullToRefreshState.nestedScrollConnection)
+                    val pullToRefreshState = rememberPullToRefreshState()
+                    val isRefreshing = if (page == 0) {
+                        subscriptionManagerState.isBypassModeRefreshing
+                    } else {
+                        subscriptionManagerState.isProxyModeRefreshing
+                    }
+                    PullToRefreshBox(
+                        modifier = Modifier,
+                        state = pullToRefreshState,
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            onPullToRefresh(mode)
+                        }
                     ) {
-                        if (list.isEmpty()) {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                val painter = if (isSystemInDarkTheme()) {
-                                    R.drawable.ic_empty_placeholder_dark
-                                } else {
-                                    R.drawable.ic_empty_placeholder_light
-                                }
-                                Image(
-                                    painter = painterResource(painter),
-                                    modifier = Modifier.size(78.dp),
-                                    contentDescription = "empty"
-                                )
-                                Text(
-                                    text = "暂无订阅",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.padding(top = 16.dp)
-                                )
-                            }
-                        } else {
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(list) { subscription ->
-                                    val isLast = list.indexOf(subscription) == list.size - 1
-                                    val modifier = if (isLast) {
-                                        Modifier
-                                            .padding(
-                                                16.dp,
-                                                top = 8.dp,
-                                                bottom = (8 + 56).dp,
-                                                end = 16.dp
-                                            )
-                                            .fillMaxWidth()
-                                            .defaultMinSize(minHeight = 56.dp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                        ) {
+                            if (list.isEmpty()) {
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    val painter = if (isSystemInDarkTheme()) {
+                                        R.drawable.ic_empty_placeholder_dark
                                     } else {
-                                        Modifier
-                                            .padding(16.dp, 8.dp)
-                                            .fillMaxWidth()
-                                            .defaultMinSize(minHeight = 56.dp)
+                                        R.drawable.ic_empty_placeholder_light
                                     }
-                                    Row(
-                                        modifier = modifier,
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        val name = subscription.ruleSubscription.name
-                                        val subTitle = "规则数: ${subscription.ruleList.size}"
-                                        val isChecked = subscription.ruleSubscription.enable
-                                        val updateTime =
-                                            subscription.ruleSubscription.updateTimeMill.time.calculateDuration()
-                                        Column(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .padding(end = 8.dp)
+                                    Image(
+                                        painter = painterResource(painter),
+                                        modifier = Modifier.size(78.dp),
+                                        contentDescription = "empty"
+                                    )
+                                    Text(
+                                        text = "暂无订阅",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(top = 16.dp)
+                                    )
+                                }
+                            } else {
+                                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                    items(list) { subscription ->
+                                        val isLast = list.indexOf(subscription) == list.size - 1
+                                        val modifier = if (isLast) {
+                                            Modifier
+                                                .padding(
+                                                    16.dp,
+                                                    top = 8.dp,
+                                                    bottom = (8 + 56).dp,
+                                                    end = 16.dp
+                                                )
+                                                .fillMaxWidth()
+                                                .defaultMinSize(minHeight = 56.dp)
+                                        } else {
+                                            Modifier
+                                                .padding(16.dp, 8.dp)
+                                                .fillMaxWidth()
+                                                .defaultMinSize(minHeight = 56.dp)
+                                        }
+                                        Row(
+                                            modifier = modifier,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
-                                            Text(
-                                                text = name,
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis,
-                                                style = MaterialTheme.typography.titleLarge
-                                            )
-                                            Text(
-                                                text = subTitle,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
-                                            Text(
-                                                text = updateTime,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                style = MaterialTheme.typography.bodyMedium
+                                            val name = subscription.ruleSubscription.name
+                                            val subTitle = "规则数: ${subscription.ruleList.size}"
+                                            val isChecked = subscription.ruleSubscription.enable
+                                            val updateTime =
+                                                subscription.ruleSubscription.updateTimeMill.time.calculateDuration()
+                                            Column(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .padding(end = 8.dp)
+                                            ) {
+                                                Text(
+                                                    text = name,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    style = MaterialTheme.typography.titleLarge
+                                                )
+                                                Text(
+                                                    text = subTitle,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    style = MaterialTheme.typography.bodyLarge
+                                                )
+                                                Text(
+                                                    text = updateTime,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                            }
+                                            Switch(
+                                                checked = isChecked,
+                                                onCheckedChange = {
+                                                    onSubscriptionSwitch(subscription, it)
+                                                },
+                                                thumbContent = if (isChecked) {
+                                                    {
+                                                        Icon(
+                                                            imageVector = Icons.Filled.Check,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(SwitchDefaults.IconSize),
+                                                        )
+                                                    }
+                                                } else {
+                                                    null
+                                                }
                                             )
                                         }
-                                        Switch(
-                                            checked = isChecked,
-                                            onCheckedChange = {
-                                                onSubscriptionSwitch(subscription, it)
-                                            },
-                                            thumbContent = if (isChecked) {
-                                                {
-                                                    Icon(
-                                                        imageVector = Icons.Filled.Check,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(SwitchDefaults.IconSize),
-                                                    )
-                                                }
-                                            } else {
-                                                null
-                                            }
-                                        )
                                     }
                                 }
                             }

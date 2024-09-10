@@ -7,6 +7,7 @@ import android.content.pm.ApplicationInfo
 import androidx.collection.LruCache
 import androidx.core.content.ContextCompat.startActivity
 import arrow.core.Either
+import arrow.core.left
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
@@ -22,18 +23,23 @@ import me.rosuh.sieve.MainViewModel
 import me.rosuh.sieve.model.database.AppDatabase
 import me.rosuh.sieve.model.database.Rule
 import me.rosuh.sieve.model.database.RuleSubscriptionWithRules
+import me.rosuh.sieve.utils.Logger
 import me.rosuh.sieve.utils.catchIO
 import okhttp3.HttpUrl
 import java.io.File
 import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.measureTime
 
 @Singleton
 class RuleRepo @Inject constructor(
     val db: AppDatabase?,
     val httpClient: HttpClient,
 ) {
+    companion object {
+        private const val TAG = "RuleRepo"
+    }
     sealed class ExportType {
         abstract fun jump(context: Context)
 
@@ -133,9 +139,12 @@ class RuleRepo @Inject constructor(
     suspend fun syncAllConf(mode: RuleMode) = withContext(Dispatchers.IO) {
         val subscriptionList = db?.ruleSubscriptionDao()?.getAllActiveWithRule(mode) ?: emptyList()
         subscriptionList.forEach { subscription ->
-            syncConf(subscription)
+            measureTime {
+                syncConf(subscription)
+            }.let {
+                Logger.d(TAG, "syncConf ${subscription.ruleSubscription.url} cost: $it")
+            }
         }
-        return@withContext
     }
 
     /**

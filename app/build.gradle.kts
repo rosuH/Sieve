@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.kotlinKsp)
     alias(libs.plugins.daggerHiltAndroid)
+    alias(libs.plugins.compose.compiler)
 }
 /**
  * read version from gradle.properties

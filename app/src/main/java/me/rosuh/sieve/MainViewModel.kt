@@ -223,11 +223,25 @@ class MainViewModel @Inject constructor(
                 is UIAction.SubscriptionPullToRefresh -> {
                     viewModelScope.launch(Dispatchers.IO) {
                         updateSubscriptionManagerState {
-                            isRefreshing = true
+                            when (action.ruleMode) {
+                                RuleMode.Proxy -> {
+                                    isProxyModeRefreshing = true
+                                }
+                                else -> {
+                                    isBypassModeRefreshing = true
+                                }
+                            }
                         }
                         repo.syncAllConf(action.ruleMode)
                         updateSubscriptionManagerState {
-                            isRefreshing = false
+                            when (action.ruleMode) {
+                                RuleMode.Proxy -> {
+                                    isProxyModeRefreshing = false
+                                }
+                                else -> {
+                                    isBypassModeRefreshing = false
+                                }
+                            }
                         }
                     }
                 }

@@ -108,11 +108,15 @@ jobs:
         if: success()
         uses: softprops/action-gh-release@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           draft: true
           tag_name: ${{ env.RELEASE_VERSION }}
           generate_release_notes: true
+          body: |
+            ${{ github.event.head_commit.message }}
+
+            ${{ steps.github_release.outputs.generated_changelog }}
           files: |
             app/build/outputs/apk/release/*-signed.apk
             app/build/outputs/bundle/release/*.aab
