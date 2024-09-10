@@ -37,7 +37,6 @@ jobs:
               APK_NAME=$(ls *-signed.apk)
               echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
               echo "Found APK: $APK_NAME"
-              echo "market_path=$market_path" >> $GITHUB_OUTPUT
           else
               echo "No signed APK found in the latest release"
               exit 1
@@ -49,7 +48,7 @@ jobs:
         env:
           CHANNEL_ID: ${{ secrets.TELEGRAM_TO }}
           BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          MARKET_FILE: ${{ steps.apk-path.outputs.market_path }}
+          MARKET_FILE: ${{ steps.apk-path.outputs.APK_NAME }}
           COMMIT_MESSAGE: |+
             新版本已发布 🎉
             ```
