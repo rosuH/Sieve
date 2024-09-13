@@ -1,6 +1,7 @@
 package me.rosuh.sieve.ui.screen
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -109,8 +110,10 @@ fun SubscriptionScreen(
     viewModel: MainViewModel,
     onAddSubscription: () -> Unit = {},
     onSubscriptionSwitch: (RuleSubscriptionWithRules, Boolean) -> Unit = { _, _ -> },
-    onPullToRefresh: (mode: RuleMode) -> Unit = { _ -> }
+    onPullToRefresh: (mode: RuleMode) -> Unit = { _ -> },
+    onBackPress: () -> Unit = {}
 ) {
+    BackHandler { onBackPress() }
     val subscriptionManagerState = remember {
         viewModel.subscriptionManagerState
     }

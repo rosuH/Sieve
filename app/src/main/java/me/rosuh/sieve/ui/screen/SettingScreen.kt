@@ -3,6 +3,7 @@ package me.rosuh.sieve.ui.screen
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,7 +41,10 @@ import me.rosuh.sieve.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingScreen() {
+fun SettingScreen(
+    onBackPress: () -> Unit = {}
+) {
+    BackHandler { onBackPress() }
     val context = LocalContext.current
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val versionName = packageInfo.versionName

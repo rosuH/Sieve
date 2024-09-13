@@ -462,30 +462,32 @@ private fun AppGrid(
     val lazyGridState = rememberSaveable(saver = LazyGridState.Saver) {
         LazyGridState(0, 0)
     }
-    LaunchedEffect(stableUserPackageList.size) {
-        // get screen refresh rate
-        val screenRefreshRate = display?.refreshRate ?: 60f
-        val interval = (1000 / screenRefreshRate).toLong()
-        var scrollValue = 0.5f
-        do {
-            when {
-                lazyGridState.canScrollBackward.not() -> {
-                    scrollValue = -scrollValue
-                    lazyGridState.animateScrollBy(scrollValue)
-                }
+    if (stableUserPackageList.size > 12) {
+        LaunchedEffect(stableUserPackageList.size) {
+            // get screen refresh rate
+            val screenRefreshRate = display?.refreshRate ?: 60f
+            val interval = (1000 / screenRefreshRate).toLong()
+            var scrollValue = 0.5f
+            do {
+                when {
+                    lazyGridState.canScrollBackward.not() -> {
+                        scrollValue = -scrollValue
+                        lazyGridState.animateScrollBy(scrollValue)
+                    }
 
-                lazyGridState.canScrollForward.not() -> {
-                    // do nothing
-                    scrollValue = -scrollValue
-                    lazyGridState.animateScrollBy(scrollValue)
-                }
+                    lazyGridState.canScrollForward.not() -> {
+                        // do nothing
+                        scrollValue = -scrollValue
+                        lazyGridState.animateScrollBy(scrollValue)
+                    }
 
-                else -> {
-                    lazyGridState.scrollBy(scrollValue)
+                    else -> {
+                        lazyGridState.scrollBy(scrollValue)
+                    }
                 }
-            }
-            delay(interval)
-        } while (stableUserPackageList.isNotEmpty())
+                delay(interval)
+            } while (stableUserPackageList.isNotEmpty())
+        }
     }
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),

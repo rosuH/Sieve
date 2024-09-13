@@ -2,8 +2,13 @@ package me.rosuh.sieve
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -55,6 +60,9 @@ class MainActivity : ComponentActivity() {
                     .statusBarsPadding()
                     .navigationBarsPadding()) {
                     val navController = rememberNavController()
+                    var subscriptionEnterTransition = remember {
+                        AnimatedContentTransitionScope.SlideDirection.Left
+                    }
                     Box(Modifier.fillMaxSize()) {
                         var selectedItem by remember { mutableIntStateOf(0) }
                         val items = listOf(
@@ -62,6 +70,7 @@ class MainActivity : ComponentActivity() {
                             stringResource(id = Screen.Subscription.title) to Screen.Subscription.icon,
                             stringResource(id = Screen.Setting.title) to Screen.Setting.icon
                         )
+                        val transitionDuration = 350
                         Surface(
                             Modifier
                                 .fillMaxWidth()
@@ -81,7 +90,15 @@ class MainActivity : ComponentActivity() {
                                 navController = navController,
                                 startDestination = Screen.Home.route
                             ) {
-                                composable(Screen.Home.route) { backStackEntry ->
+                                composable(
+                                    Screen.Home.route,
+                                    exitTransition = {
+                                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(transitionDuration))
+                                    },
+                                    popEnterTransition = {
+                                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(transitionDuration))
+                                    }
+                                ) { backStackEntry ->
                                     HomeScreen(
                                         mainViewModel,
                                         onScan = onScan,
@@ -102,7 +119,21 @@ class MainActivity : ComponentActivity() {
                                         }
                                     )
                                 }
-                                composable(Screen.Subscription.route) {
+                                composable(
+                                    Screen.Subscription.route,
+                                    enterTransition = {
+                                        slideIntoContainer(subscriptionEnterTransition, animationSpec = tween(transitionDuration))
+                                    },
+                                    exitTransition = {
+                                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(transitionDuration))
+                                    },
+                                    popEnterTransition = {
+                                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(transitionDuration))
+                                    },
+                                    popExitTransition = {
+                                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(transitionDuration))
+                                    }
+                                ) {
                                     SubscriptionScreen(
                                         viewModel = mainViewModel,
                                         onAddSubscription = {
@@ -122,11 +153,30 @@ class MainActivity : ComponentActivity() {
                                             mainViewModel.processUIAction(
                                                 MainViewModel.UIAction.SubscriptionPullToRefresh(it)
                                             )
+                                        },
+                                        onBackPress = {
+                                            selectedItem = 0
                                         }
                                     )
                                 }
-                                composable(Screen.Setting.route) {
-                                    SettingScreen()
+                                composable(
+                                    Screen.Setting.route,
+                                    enterTransition = {
+                                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(transitionDuration))
+                                    },
+                                    exitTransition = {
+                                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(transitionDuration))
+                                    },
+                                    popEnterTransition = {
+                                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(transitionDuration))
+                                    },
+                                    popExitTransition = {
+                                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(transitionDuration))
+                                    }
+                                ) {
+                                    SettingScreen {
+                                        selectedItem = 0
+                                    }
                                 }
                             }
                         }
@@ -160,23 +210,16 @@ class MainActivity : ComponentActivity() {
                         }
                         when (selectedItem) {
                             0 -> {
-                                navController.navigate(Screen.Home.route) {
-                                    popUpTo(Screen.Subscription.route) {
-                                        inclusive = true
-                                    }
-                                    popUpTo(Screen.Setting.route) {
-                                        inclusive = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                                navController.popBackStack(Screen.Home.route, false)
                             }
 
                             1 -> {
+                                subscriptionEnterTransition = if (navController.currentDestination?.route != Screen.Setting.route) {
+                                    AnimatedContentTransitionScope.SlideDirection.Left
+                                } else {
+                                    AnimatedContentTransitionScope.SlideDirection.Right
+                                }
                                 navController.navigate(Screen.Subscription.route) {
-                                    popUpTo(Screen.Setting.route) {
-                                        inclusive = true
-                                    }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
@@ -184,9 +227,6 @@ class MainActivity : ComponentActivity() {
 
                             2 -> {
                                 navController.navigate(Screen.Setting.route) {
-                                    popUpTo(Screen.Subscription.route) {
-                                        inclusive = true
-                                    }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
