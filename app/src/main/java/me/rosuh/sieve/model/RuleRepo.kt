@@ -14,6 +14,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.decodeURLPart
 import io.ktor.http.decodeURLQueryComponent
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -73,6 +74,20 @@ class RuleRepo @Inject constructor(
             override fun jump(context: Context) {
                 val packageName = "com.github.metacubex.clash.meta"
                 val activityName = "com.github.kr328.clash.MainActivity"
+                val intent = Intent(Intent.ACTION_MAIN).apply {
+                    setComponent(ComponentName(packageName, activityName))
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                kotlin.runCatching {
+                    context.startActivity(intent)
+                }
+            }
+        }
+
+        data object FlClash : ExportType() {
+            override fun jump(context: Context) {
+                val packageName = "com.follow.clash"
+                val activityName = "com.follow.clash.MainActivity"
                 val intent = Intent(Intent.ACTION_MAIN).apply {
                     setComponent(ComponentName(packageName, activityName))
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -166,10 +181,10 @@ class RuleRepo @Inject constructor(
         packageList: List<AppInfo>,
         mode: RuleMode,
         type: RuleRepo.ExportType
-    ): String {
+    ): String = withContext(Dispatchers.Default) {
         val list = filter(packageList, mode)
         // export to specific format
-        return when (type) {
+        return@withContext when (type) {
             ExportType.Surfboard -> {
                 // export to surfboard format
                 val surfboardModel = SurfboardModel(
@@ -181,6 +196,7 @@ class RuleRepo @Inject constructor(
                 )
                 encodeToString(SurfboardModel.serializer(), surfboardModel)
             }
+
             ExportType.NekoBoxAndroid -> {
                 val flag = when (mode) {
                     RuleMode.Proxy -> "false"
@@ -195,6 +211,70 @@ class RuleRepo @Inject constructor(
                 list.joinToString("\n") {
                     "$it.packageName"
                 }
+            }
+
+            /**
+             * bypass mode
+             * ```
+             * {
+             *   "mode": "acceptSelected",
+             *   "acceptList": [],
+             *   "rejectList": ["com.tencent.mobileqq", "com.tencent.karaoke"],
+             *   "sort": "none",
+             *   "isFilterSystemApp": true
+             * }
+             *
+             * ```
+             * proxy mode
+             * ```
+             * {
+             *   "mode": "rejectSelected",
+             *   "acceptList": [],
+             *   "rejectList": ["com.tencent.mobileqq", "com.tencent.karaoke"],
+             *   "sort": "none",
+             *   "isFilterSystemApp": true
+             * }
+             *
+             * ```
+             */
+
+            /**
+             * bypass mode
+             * ```
+             * {
+             *   "mode": "acceptSelected",
+             *   "acceptList": [],
+             *   "rejectList": ["com.tencent.mobileqq", "com.tencent.karaoke"],
+             *   "sort": "none",
+             *   "isFilterSystemApp": true
+             * }
+             *
+             * ```
+             * proxy mode
+             * ```
+             * {
+             *   "mode": "rejectSelected",
+             *   "acceptList": [],
+             *   "rejectList": ["com.tencent.mobileqq", "com.tencent.karaoke"],
+             *   "sort": "none",
+             *   "isFilterSystemApp": true
+             * }
+             *
+             * ```
+             */
+            ExportType.FlClash -> {
+                val resultList = list.map { it.packageName }
+                val flClashModel = FlClashModel(
+                    mode = when (mode) {
+                        RuleMode.Proxy -> "rejectSelected"
+                        RuleMode.ByPass -> "acceptSelected"
+                    },
+                    acceptList = (if (mode == RuleMode.Proxy) emptyList() else resultList).toImmutableList(),
+                    rejectList = (if (mode == RuleMode.Proxy) resultList else emptyList()).toImmutableList(),
+                    sort = "none",
+                    isFilterSystemApp = true
+                )
+                encodeToString(FlClashModel.serializer(), flClashModel)
             }
         }
     }

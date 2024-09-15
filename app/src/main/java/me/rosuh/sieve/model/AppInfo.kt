@@ -3,13 +3,15 @@ package me.rosuh.sieve.model
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.compose.runtime.Immutable
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 
 @Immutable
 data class AppList(
-    val list: List<AppInfo>
+    val list: ImmutableList<AppInfo>
 ) : List<AppInfo> by list {
     companion object {
-        val empty = AppList(emptyList())
+        val empty = AppList(emptyList<AppInfo>().toImmutableList())
     }
 }
 

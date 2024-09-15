@@ -23,12 +23,17 @@ import me.rosuh.sieve.utils.Logger
 import me.rosuh.sieve.utils.catchIO
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import javax.inject.Inject
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.delay
+import kotlin.math.cos
+import kotlin.time.measureTime
+
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     val repo: RuleRepo
 ) : ViewModel() {
-    
+
     companion object {
         private const val TAG = "MainViewModel"
     }
@@ -38,15 +43,23 @@ class MainViewModel @Inject constructor(
         data class Scan(val pm: PackageManager) : UIAction()
         data class ChangeMode(val ruleMode: RuleMode) : UIAction()
         data class Filter(val packageList: List<AppInfo>, val mode: RuleMode) : UIAction()
-        data class Export(val packageList: List<AppInfo>, val mode: RuleMode, val exportType: RuleRepo.ExportType) : UIAction()
+        data class Export(
+            val packageList: List<AppInfo>,
+            val mode: RuleMode,
+            val exportType: RuleRepo.ExportType
+        ) : UIAction()
+
         data object AddSubscription : UIAction()
         data class AddSubscriptionFinish(val name: String?, val url: String?) : UIAction()
         data class SubscriptionSwitch(
             val subscription: RuleSubscriptionWithRules,
             val checked: Boolean
         ) : UIAction()
+
         data class SubscriptionPullToRefresh(val ruleMode: RuleMode) : UIAction()
         data object ResetAddSubscriptionError : UIAction()
+        data object DismissExportDialog : UIAction()
+        data object PasteExportResult : UIAction()
     }
 
     sealed class Event {
@@ -90,6 +103,7 @@ class MainViewModel @Inject constructor(
                         }
                     }
                 }
+
                 is UIAction.Scan -> {
                     updatehomeState {
                         isScanningPackage = true
@@ -108,16 +122,21 @@ class MainViewModel @Inject constructor(
                                 isScanningPackage = false
                                 latestScanTime = System.currentTimeMillis()
                             }
-                            homeState.updateInstallPackageList((it[true] ?: emptyList()) + (it[false] ?: emptyList()))
-                            homeState.updateUserPackageList(AppList(it[true] ?: emptyList()))
+                            homeState.updateInstallPackageList(
+                                ((it[true] ?: emptyList()) + (it[false]
+                                    ?: emptyList())).toImmutableList()
+                            )
+                            homeState.updateUserPackageList(
+                                (it[true] ?: emptyList()).toImmutableList()
+                            )
                         } ?: run {
                             _eventChannel.send(Event.ScanFailed("请到设置中授予「获取应用列表」权限"))
                             updatehomeState {
                                 isScanningPackage = false
                                 latestScanTime = System.currentTimeMillis()
                             }
-                            homeState.updateInstallPackageList(emptyList())
-                            homeState.updateUserPackageList(AppList(emptyList()))
+                            homeState.updateInstallPackageList(emptyList<AppInfo>().toImmutableList())
+                            homeState.updateUserPackageList(emptyList<AppInfo>().toImmutableList())
                         }
                     }
                 }
@@ -148,7 +167,17 @@ class MainViewModel @Inject constructor(
                         exportType = action.exportType
                     }
                     kotlin.runCatching {
-                        repo.exportApplicationList(action.packageList, action.mode, action.exportType)
+                        var result = ""
+                        val cost = measureTime {
+                            result = repo.exportApplicationList(
+                                action.packageList,
+                                action.mode,
+                                action.exportType
+                            )
+                        }.inWholeMilliseconds
+                        // keep the animation for at least 300ms
+                        delay(500 - cost)
+                        result
                     }.fold(
                         onSuccess = {
                             updatehomeState {
@@ -160,6 +189,7 @@ class MainViewModel @Inject constructor(
                             }
                         },
                         onFailure = { throwable ->
+                            Logger.e(TAG, "Export failed: ${throwable.message}")
                             updatehomeState {
                                 isExporting = false
                                 isExportSuccess = false
@@ -227,6 +257,7 @@ class MainViewModel @Inject constructor(
                                 RuleMode.Proxy -> {
                                     isProxyModeRefreshing = true
                                 }
+
                                 else -> {
                                     isBypassModeRefreshing = true
                                 }
@@ -238,6 +269,7 @@ class MainViewModel @Inject constructor(
                                 RuleMode.Proxy -> {
                                     isProxyModeRefreshing = false
                                 }
+
                                 else -> {
                                     isBypassModeRefreshing = false
                                 }
@@ -250,6 +282,17 @@ class MainViewModel @Inject constructor(
                     updateSubscriptionManagerState {
                         addSubscriptionCheckFailed = false
                         isAddSubscriptionFailed = false
+                    }
+                }
+
+                UIAction.DismissExportDialog, UIAction.PasteExportResult -> {
+                    // 移除导出相关的状态
+                    updatehomeState {
+                        isExporting = false
+                        isExportFailed = false
+                        isExportSuccess = false
+                        exportMsg = ""
+                        exportResult = ""
                     }
                 }
             }

@@ -141,4 +141,5 @@ dependencies {
     ksp(libs.arrow.optics.ksp.plugin)
 
     implementation(libs.kotlinx.datetime)
+    implementation(libs.kotlinx.collections.immutable)
 }

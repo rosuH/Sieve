@@ -5,7 +5,14 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.view.WindowManager
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -27,8 +34,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,14 +42,17 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +62,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -63,6 +73,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -73,6 +84,7 @@ import me.rosuh.sieve.model.AppList
 import me.rosuh.sieve.model.RuleMode
 import me.rosuh.sieve.model.RuleRepo
 import me.rosuh.sieve.model.database.StableRuleSubscriptionWithRules
+import me.rosuh.sieve.utils.Logger
 import me.rosuh.sieve.utils.calculateDurationComposable
 
 
@@ -229,7 +241,7 @@ fun HomeScreen(
                     val exportEnable = homeState.isExporting.not()
                     val iconModifier = Modifier
                         .size(40.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(12.dp))
                     Row {
                         IconButton(
                             modifier = buttonModifier.size(48.dp),
@@ -238,12 +250,12 @@ fun HomeScreen(
                                 onExport(
                                     installPackageList,
                                     homeState.mode,
-                                    RuleRepo.ExportType.ClashMetaForAndroid
+                                    RuleRepo.ExportType.FlClash
                                 )
                             }) {
                             Image(
-                                painter = painterResource(id = R.drawable.ic_cmfa),
-                                contentDescription = "ClashMetaForAndroid",
+                                painter = painterResource(id = R.drawable.ic_flclash),
+                                contentDescription = "FlClash",
                                 modifier = iconModifier
                             )
                         }
@@ -279,44 +291,99 @@ fun HomeScreen(
                                 modifier = iconModifier
                             )
                         }
-                    }
-                    Row(modifier = Modifier.padding(top = 8.dp)) {
-                        val modifier = Modifier.padding(start = 8.dp)
-                        when {
-                            homeState.isExporting -> {
-                                Text(
-                                    text = stringResource(id = R.string.tab_home_title_exporting),
-                                    modifier = modifier,
-                                    style = MaterialTheme.typography.labelMedium
+                        IconButton(
+                            modifier = buttonModifier.size(48.dp),
+                            enabled = exportEnable,
+                            onClick = {
+                                onExport(
+                                    installPackageList,
+                                    homeState.mode,
+                                    RuleRepo.ExportType.ClashMetaForAndroid
                                 )
-                            }
-
-                            homeState.isExportFailed -> {
-                                Text(
-                                    text = "${stringResource(id = R.string.tab_home_title_export_failed)}, ${homeState.exportMsg}",
-                                    modifier = modifier,
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                            }
-
-                            homeState.isExportSuccess -> {
-                                Text(
-                                    text = "${stringResource(id = R.string.tab_home_title_export_success)}, ${homeState.exportMsg}",
-                                    modifier = modifier,
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                                val clipboardManager = LocalClipboardManager.current
-                                val textToCopy by remember { mutableStateOf(homeState.exportResult) }
-                                clipboardManager.setText(AnnotatedString(textToCopy))
-                                homeState.exportType.jump(context)
-                            }
+                            }) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_cmfa),
+                                contentDescription = "ClashMetaForAndroid",
+                                modifier = iconModifier
+                            )
                         }
+                    }
+                    if (homeState.isExporting || homeState.isExportFailed || homeState.isExportSuccess) {
+                        val onDismiss = { viewModel.processUIAction(MainViewModel.UIAction.DismissExportDialog) }
+                        val onJump = { viewModel.processUIAction(MainViewModel.UIAction.PasteExportResult) }
+                        ExportDialog(
+                            isExporting = homeState.isExporting,
+                            isExportFailed = homeState.isExportFailed,
+                            isExportSuccess = homeState.isExportSuccess,
+                            exportType = homeState.exportType,
+                            exportMsg = homeState.exportMsg,
+                            exportResult = homeState.exportResult,
+                            onDismiss = onDismiss,
+                            onJump = onJump
+                        )
                     }
                 }
             }
         }
     }
 
+}
+
+@Composable
+fun ExportDialog(
+    isExporting: Boolean,
+    isExportFailed: Boolean,
+    isExportSuccess: Boolean,
+    exportType: RuleRepo.ExportType,
+    exportMsg: String,
+    exportResult: String,
+    onDismiss: () -> Unit,
+    onJump: () -> Unit
+) {
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("导出") },
+        text = {
+            Column {
+                Text(
+                    text = when {
+                        isExporting -> stringResource(id = R.string.tab_home_title_exporting)
+                        isExportFailed -> "${stringResource(id = R.string.tab_home_title_export_failed)}, $exportMsg"
+                        isExportSuccess -> "${stringResource(id = R.string.tab_home_title_export_success)}, $exportMsg"
+                        else -> ""
+                    }
+                )
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                        .alpha(if (isExporting) 1f else 0f)
+                )
+            }
+        },
+        confirmButton = {
+            AnimatedVisibility(
+                visible = isExportSuccess,
+                enter = fadeIn() + expandHorizontally(),
+                exit = fadeOut() + shrinkHorizontally()
+            ) {
+                TextButton(onClick = {
+                    clipboardManager.setText(AnnotatedString(exportResult))
+                    exportType.jump(context)
+                    onJump()
+                }) {
+                    Text("去粘贴")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
 
 
@@ -360,12 +427,12 @@ class HomeState(
     val installPackageList: StateFlow<AppList> = _installPackageList
     val userPackageList: StateFlow<AppList> = _userPackageList
 
-    suspend fun updateInstallPackageList(appInfos: List<AppInfo>): HomeState {
+    suspend fun updateInstallPackageList(appInfos: ImmutableList<AppInfo>): HomeState {
         _installPackageList.emit(AppList(appInfos))
         return this
     }
 
-    suspend fun updateUserPackageList(appInfos: List<AppInfo>): HomeState {
+    suspend fun updateUserPackageList(appInfos: ImmutableList<AppInfo>): HomeState {
         _userPackageList.emit(AppList(appInfos))
         return this
     }
