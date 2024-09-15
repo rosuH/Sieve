@@ -2,7 +2,7 @@
 
 Sieve 旨在帮助用户更好地管理代理软件的应用过滤规则。
 
-[![Discussion](https://img.shields.io/badge/Telegram-Group-blue.svg?logo=telegram)](https://t.me/sieveapp)
+[![Discussion](https://img.shields.io/badge/Telegram-Channel-blue.svg?logo=telegram)](https://t.me/sieveapp)
 
 <p align="center">
   <img src="./assets/banner.png" alt="Sieve Banner" width="100%">
