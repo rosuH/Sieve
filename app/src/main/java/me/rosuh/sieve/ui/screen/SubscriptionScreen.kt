@@ -4,6 +4,9 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,10 +54,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -66,6 +76,7 @@ import me.rosuh.sieve.R
 import me.rosuh.sieve.model.RuleMode
 import me.rosuh.sieve.model.database.RuleSubscriptionWithRules
 import me.rosuh.sieve.utils.calculateDuration
+import me.rosuh.sieve.utils.yellowBg
 
 @Stable
 class SubscriptionManagerState(
@@ -269,75 +280,8 @@ fun SubscriptionScreen(
                             } else {
                                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                                     items(list) { subscription ->
-                                        val isLast = list.indexOf(subscription) == list.size - 1
-                                        val modifier = if (isLast) {
-                                            Modifier
-                                                .padding(
-                                                    16.dp,
-                                                    top = 8.dp,
-                                                    bottom = (8 + 56).dp,
-                                                    end = 16.dp
-                                                )
-                                                .fillMaxWidth()
-                                                .defaultMinSize(minHeight = 56.dp)
-                                        } else {
-                                            Modifier
-                                                .padding(16.dp, 8.dp)
-                                                .fillMaxWidth()
-                                                .defaultMinSize(minHeight = 56.dp)
-                                        }
-                                        Row(
-                                            modifier = modifier,
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            val name = subscription.ruleSubscription.name
-                                            val subTitle = "规则数: ${subscription.ruleList.size}"
-                                            val isChecked = subscription.ruleSubscription.enable
-                                            val updateTime =
-                                                subscription.ruleSubscription.updateTimeMill.time.calculateDuration()
-                                            Column(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .padding(end = 8.dp)
-                                            ) {
-                                                Text(
-                                                    text = name,
-                                                    maxLines = 2,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    style = MaterialTheme.typography.titleLarge
-                                                )
-                                                Text(
-                                                    text = subTitle,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    style = MaterialTheme.typography.bodyLarge
-                                                )
-                                                Text(
-                                                    text = updateTime,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    style = MaterialTheme.typography.bodyMedium
-                                                )
-                                            }
-                                            Switch(
-                                                checked = isChecked,
-                                                onCheckedChange = {
-                                                    onSubscriptionSwitch(subscription, it)
-                                                },
-                                                thumbContent = if (isChecked) {
-                                                    {
-                                                        Icon(
-                                                            imageVector = Icons.Filled.Check,
-                                                            contentDescription = null,
-                                                            modifier = Modifier.size(SwitchDefaults.IconSize),
-                                                        )
-                                                    }
-                                                } else {
-                                                    null
-                                                }
-                                            )
-                                        }
+                                        val isLast = list.size > 1 && list.indexOf(subscription) == list.size - 1
+                                        SubscriptionItem(isLast, subscription = subscription, onSubscriptionSwitch = onSubscriptionSwitch)
                                     }
                                 }
                             }
@@ -349,6 +293,122 @@ fun SubscriptionScreen(
     }
 }
 
+@Composable
+private fun SubscriptionItem(
+    isLast: Boolean,
+    modifier: Modifier = Modifier,
+    subscription: RuleSubscriptionWithRules,
+    onSubscriptionSwitch: (RuleSubscriptionWithRules, Boolean) -> Unit,
+    onEdit: (subscription: RuleSubscriptionWithRules) -> Unit = {},
+    onDelete: (subscription: RuleSubscriptionWithRules) -> Unit = {}
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var touchX by remember { mutableStateOf(0f) }
+    val innerModifier = if (isLast) {
+        modifier
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = { offset ->
+                        touchX = offset.x
+                    },
+                    onLongPress = {
+                        expanded = !expanded
+                    }
+                )
+            }
+            .padding(
+                16.dp,
+                top = 8.dp,
+                bottom = (8 + 56).dp,
+                end = 16.dp
+            )
+            .fillMaxWidth()
+    } else {
+        modifier
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = { offset ->
+                        touchX = offset.x
+                    },
+                    onLongPress = {
+                        expanded = !expanded
+                    }
+                )
+            }
+            .fillMaxWidth()
+            .padding(16.dp, 8.dp)
+    }
+
+    Row(
+        modifier = innerModifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        val name = subscription.ruleSubscription.name
+        val subTitle = "规则数: ${subscription.ruleList.size}"
+        val isChecked = subscription.ruleSubscription.enable
+        val updateTime =
+            subscription.ruleSubscription.updateTimeMill.time.calculateDuration()
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp)
+        ) {
+            Text(
+                text = name,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = subTitle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = updateTime,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        Switch(
+            checked = isChecked,
+            onCheckedChange = {
+                onSubscriptionSwitch(subscription, it)
+            },
+            thumbContent = if (isChecked) {
+                {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                    )
+                }
+            } else {
+                null
+            }
+        )
+    }
+    Box(modifier = Modifier) {
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.align(Alignment.TopStart),
+            offset = DpOffset((touchX / LocalDensity.current.density).dp, 0.dp),
+        ) {
+            DropdownMenuItem(onClick = {
+                expanded = false
+                onEdit(subscription)
+            }, text = { Text("编辑") })
+            DropdownMenuItem(onClick = {
+                expanded = false
+                onDelete(subscription)
+            }, text = { Text("删除") })
+        }
+    }
+}
 
 
 @Composable
