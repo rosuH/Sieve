@@ -24,6 +24,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -281,7 +282,21 @@ fun SubscriptionScreen(
                                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                                     items(list) { subscription ->
                                         val isLast = list.size > 1 && list.indexOf(subscription) == list.size - 1
-                                        SubscriptionItem(isLast, subscription = subscription, onSubscriptionSwitch = onSubscriptionSwitch)
+                                        SubscriptionItem(
+                                            isLast,
+                                            subscription = subscription,
+                                            onSubscriptionSwitch = onSubscriptionSwitch,
+                                            onEdit = {
+                                                viewModel.processUIAction(
+                                                    MainViewModel.UIAction.EditSubscription(it)
+                                                )
+                                            },
+                                            onDelete = {
+                                                viewModel.processUIAction(
+                                                    MainViewModel.UIAction.DeleteSubscription(it)
+                                                )
+                                            }
+                                        )
                                     }
                                 }
                             }
@@ -299,11 +314,12 @@ private fun SubscriptionItem(
     modifier: Modifier = Modifier,
     subscription: RuleSubscriptionWithRules,
     onSubscriptionSwitch: (RuleSubscriptionWithRules, Boolean) -> Unit,
-    onEdit: (subscription: RuleSubscriptionWithRules) -> Unit = {},
-    onDelete: (subscription: RuleSubscriptionWithRules) -> Unit = {}
+    onEdit: (subscription: RuleSubscriptionWithRules) -> Unit,
+    onDelete: (subscription: RuleSubscriptionWithRules) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var touchX by remember { mutableStateOf(0f) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
     val innerModifier = if (isLast) {
         modifier
             .pointerInput(Unit) {
@@ -404,9 +420,30 @@ private fun SubscriptionItem(
             }, text = { Text("编辑") })
             DropdownMenuItem(onClick = {
                 expanded = false
-                onDelete(subscription)
+                showDeleteConfirmation = true
             }, text = { Text("删除") })
         }
+    }
+    // Delete Confirmation Dialog
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("确认删除") },
+            text = { Text("您确定要删除此订阅吗？") },
+            confirmButton = {
+                Button(onClick = {
+                    onDelete(subscription)
+                    showDeleteConfirmation = false
+                }) {
+                    Text("删除")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDeleteConfirmation = false }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 }
 

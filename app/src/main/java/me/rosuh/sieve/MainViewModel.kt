@@ -57,6 +57,8 @@ class MainViewModel @Inject constructor(
         ) : UIAction()
 
         data class SubscriptionPullToRefresh(val ruleMode: RuleMode) : UIAction()
+        class EditSubscription(val subscription: RuleSubscriptionWithRules) : UIAction()
+        class DeleteSubscription(val subscription: RuleSubscriptionWithRules) : UIAction()
         data object ResetAddSubscriptionError : UIAction()
         data object DismissExportDialog : UIAction()
         data object PasteExportResult : UIAction()
@@ -294,6 +296,16 @@ class MainViewModel @Inject constructor(
                         exportMsg = ""
                         exportResult = ""
                     }
+                }
+
+                is UIAction.DeleteSubscription -> {
+                    viewModelScope.launch(Dispatchers.IO) {
+                        repo.deleteSubscription(action.subscription)
+                    }
+                }
+                is UIAction.EditSubscription -> {
+                    // jump to edit page
+
                 }
             }
         }

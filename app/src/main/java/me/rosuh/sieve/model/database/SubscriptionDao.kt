@@ -93,10 +93,38 @@ interface SubscriptionDao {
         insertSubscriptionRuleCrossRef(subscriptionRuleCrossRef)
     }
 
+    @Transaction
+    @Delete
+    suspend fun deleteSubscription(subscription: RuleSubscription)
+
+    @Transaction
+    @Delete
+    suspend fun deleteRule(rule: List<Rule>)
+
+    @Query("DELETE FROM SubscriptionRuleCrossRef WHERE subscription_id = :subscriptionId")
+    suspend fun deleteCrossRefBySubscriptionId(subscriptionId: Int)
+
+    @Query("SELECT COUNT(*) FROM SubscriptionRuleCrossRef WHERE rule_id = :ruleId")
+    suspend fun countSubscriptionsForRule(ruleId: Int): Int
+
+
     /**
      * delete
      */
     @Transaction
-    @Delete
-    suspend fun delete(subscription: RuleSubscription)
+    suspend fun delete(subscription: RuleSubscriptionWithRules) {
+        // 先删除交叉引用
+        deleteCrossRefBySubscriptionId(subscription.ruleSubscription.subscriptionId)
+
+        // 删除规则时先检查是否有其他订阅引用
+        for (rule in subscription.ruleList) {
+            val count = countSubscriptionsForRule(rule.id)
+            if (count == 0) {
+                deleteRule(listOf(rule)) // 仅在没有引用时删除
+            }
+        }
+
+        // 删除订阅
+        deleteSubscription(subscription.ruleSubscription)
+    }
 }

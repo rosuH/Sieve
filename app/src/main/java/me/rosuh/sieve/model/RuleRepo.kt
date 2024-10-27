@@ -331,4 +331,8 @@ class RuleRepo @Inject constructor(
         withContext(Dispatchers.IO) {
             db?.ruleSubscriptionDao()?.update(subscription.ruleSubscription.copy(enable = checked))
         }
+
+    suspend fun deleteSubscription(subscription: RuleSubscriptionWithRules) {
+        db?.ruleSubscriptionDao()?.delete(subscription)
+    }
 }
