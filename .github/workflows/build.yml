@@ -4,6 +4,8 @@ env:
   # The name of the main module repository
   main_project_module: app
   RELEASE_VERSION: ""
+  GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3072m -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:MaxMetaspaceSize=1g" -Dkotlin.daemon.jvm.options="-Xmx2560m" -Dkotlin.incremental=false
+  CI_GRADLE_ARG_PROPERTIES: --stacktrace -PpreDexEnable=false --max-workers 2 --no-daemon
 
 on:
   # on merge to master
@@ -62,16 +64,25 @@ jobs:
       - name: Retrieve version
         run: |
           echo VERSION=$(echo ${{ github.event.head_commit.id }} | head -c 10) >> $GITHUB_ENV
+      - name: Set version from properties
+        run: |
+          majorVersion=$(grep 'majorVersion=' gradle.properties | cut -d'=' -f2)
+          minorVersion=$(grep 'minorVersion=' gradle.properties | cut -d'=' -f2)
+          patchVersion=${{ github.run_number }}
+          versionName="${majorVersion}.${minorVersion}.${patchVersion}-$(date +'%Y%m%d%H%M')"
+          versionCode=$((majorVersion * 10000 + minorVersion * 100 + patchVersion))
+          echo "RELEASE_VERSION_NAME=$versionName" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION_CODE=$versionCode" >> "$GITHUB_ENV"
       # Set Repository Name As Env Variable
       - name: Set repository name as env variable
         run: echo "repository_name=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
       # Create APK Release
       - name: Build apk release project (APK) - ${{ env.main_project_module }} module
-        run: ./gradlew -PappVerName=${{ env.VERSION }} ${{ env.main_project_module }}:assembleRelease
+        run: ./gradlew -PappVerName=${{ env.VERSION }} ${{ env.main_project_module }}:assembleRelease -PversionCode=${{ env.RELEASE_VERSION_CODE }} -PversionName=${{ env.RELEASE_VERSION_NAME }}
       # Create Bundle AAB Release
       # Noted for main module build [main_project_module]:bundleRelease
       - name: Build app bundle release (AAB) - ${{ env.main_project_module }} module
-        run: ./gradlew ${{ env.main_project_module }}:bundleRelease
+        run: ./gradlew ${{ env.main_project_module }}:bundleRelease -PversionCode=${{ env.RELEASE_VERSION_CODE }} -PversionName=${{ env.RELEASE_VERSION_NAME }}
 
       - name: Sign apk release
         if: success()
@@ -97,21 +108,14 @@ jobs:
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
-      - name: Set version from properties
-        run: |
-          majorVersion=$(grep 'majorVersion=' gradle.properties | cut -d'=' -f2)
-          minorVersion=$(grep 'minorVersion=' gradle.properties | cut -d'=' -f2)
-          patchVersion=$(grep 'patchVersion=' gradle.properties | cut -d'=' -f2)
-          version="${majorVersion}.${minorVersion}.${patchVersion}"
-          echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
       - name: Publish release.
         if: success()
         uses: softprops/action-gh-release@v2
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
-          draft: true
-          tag_name: ${{ env.RELEASE_VERSION }}
+          draft: false
+          tag_name: ${{ env.RELEASE_VERSION_NAME }}
           generate_release_notes: true
           body: |
             ${{ github.event.head_commit.message }}
