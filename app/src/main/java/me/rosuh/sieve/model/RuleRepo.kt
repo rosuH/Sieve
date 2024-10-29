@@ -106,7 +106,6 @@ class RuleRepo @Inject constructor(
         name: String?,
         url: String,
     ): Either<Throwable, ConfParser> = catchIO {
-        delay(1500)
         val response: HttpResponse = httpClient.get(url)
         val channel = response.bodyAsChannel()
         val confName = name.takeIf { it.isNullOrEmpty().not() } ?: File(URL(url.decodeURLPart().decodeURLQueryComponent()).path).name
