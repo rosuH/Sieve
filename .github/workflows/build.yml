@@ -69,8 +69,10 @@ jobs:
           majorVersion=$(grep 'majorVersion=' gradle.properties | cut -d'=' -f2)
           minorVersion=$(grep 'minorVersion=' gradle.properties | cut -d'=' -f2)
           patchVersion=${{ github.run_number }}
-          versionName="${majorVersion}.${minorVersion}.${patchVersion}-$(date +'%Y%m%d%H%M')"
+          versionSuffix="${patchVersion}-$(date +'%Y%m%d%H%M')"
+          versionName="${majorVersion}.${minorVersion}.${versionSuffix}"
           versionCode=$((majorVersion * 10000 + minorVersion * 100 + patchVersion))
+          echo "RELEASE_VERSION_SUFFIX=$versionSuffix" >> "$GITHUB_ENV"
           echo "RELEASE_VERSION_NAME=$versionName" >> "$GITHUB_ENV"
           echo "RELEASE_VERSION_CODE=$versionCode" >> "$GITHUB_ENV"
       # Set Repository Name As Env Variable
@@ -82,7 +84,7 @@ jobs:
       # Create Bundle AAB Release
       # Noted for main module build [main_project_module]:bundleRelease
       - name: Build app bundle release (AAB) - ${{ env.main_project_module }} module
-        run: ./gradlew ${{ env.main_project_module }}:bundleRelease -PversionCodeFromEnv=${{ env.RELEASE_VERSION_CODE }} -PversionNameFromEnv=${{ env.RELEASE_VERSION_NAME }}
+        run: ./gradlew ${{ env.main_project_module }}:bundleRelease -PversionSuffix=${{ env.RELEASE_VERSION_SUFFIX }} -PpatchVersion=${{ github.run_number }}
 
       - name: Sign apk release
         if: success()

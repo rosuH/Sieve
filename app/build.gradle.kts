@@ -11,8 +11,18 @@ plugins {
 /**
  * read version from gradle.properties
  */
-val versionCodeFromEnv by properties
-val versionNameFromEnv by properties
+val majorVersion: String by properties
+val minorVersion: String by properties
+val patchVersion: String by properties
+val versionSuffix: String? by properties
+
+fun getVersionCode(): Int {
+    return majorVersion.toInt() * 10000 + minorVersion.toInt() * 100 + patchVersion.toInt()
+}
+
+fun getVersionName(): String {
+    return "$majorVersion.$minorVersion.${versionSuffix.takeIf { it.isNullOrBlank().not() } ?: patchVersion}"
+}
 
 android {
     namespace = "me.rosuh.sieve"
@@ -22,8 +32,8 @@ android {
         applicationId = "me.rosuh.sieve"
         minSdk = 24
         targetSdk = 34
-        versionCode = versionCodeFromEnv?.toString()?.toInt() ?: 1
-        versionName = versionNameFromEnv?.toString() ?: "1.0.0"
+        versionCode = getVersionCode()
+        versionName = getVersionName()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
