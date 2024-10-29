@@ -78,7 +78,7 @@ android {
     applicationVariants.configureEach {
         outputs.configureEach {
             (this as? ApkVariantOutputImpl)?.outputFileName =
-                "Sieve-$versionName-$versionCode.apk"
+                "Sieve-$versionName.apk"
         }
     }
 }

@@ -16,6 +16,7 @@ import io.ktor.http.decodeURLPart
 import io.ktor.http.decodeURLQueryComponent
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -105,6 +106,7 @@ class RuleRepo @Inject constructor(
         name: String?,
         url: String,
     ): Either<Throwable, ConfParser> = catchIO {
+        delay(1500)
         val response: HttpResponse = httpClient.get(url)
         val channel = response.bodyAsChannel()
         val confName = name.takeIf { it.isNullOrEmpty().not() } ?: File(URL(url.decodeURLPart().decodeURLQueryComponent()).path).name

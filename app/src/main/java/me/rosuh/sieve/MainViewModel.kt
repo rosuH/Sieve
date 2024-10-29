@@ -14,7 +14,6 @@ import kotlinx.coroutines.withContext
 import me.rosuh.sieve.model.AppInfo
 import me.rosuh.sieve.model.RuleMode
 import me.rosuh.sieve.model.RuleRepo
-import me.rosuh.sieve.model.AppList
 import me.rosuh.sieve.model.database.RuleSubscriptionWithRules
 import me.rosuh.sieve.model.database.StableRuleSubscriptionWithRules
 import me.rosuh.sieve.ui.screen.SubscriptionManagerState
@@ -25,7 +24,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import javax.inject.Inject
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
-import kotlin.math.cos
 import kotlin.time.measureTime
 
 
@@ -50,7 +48,7 @@ class MainViewModel @Inject constructor(
         ) : UIAction()
 
         data object AddSubscription : UIAction()
-        data class AddSubscriptionFinish(val name: String?, val url: String?) : UIAction()
+        data class AddSubscriptionIng(val name: String?, val url: String?) : UIAction()
         data class SubscriptionSwitch(
             val subscription: RuleSubscriptionWithRules,
             val checked: Boolean
@@ -204,15 +202,15 @@ class MainViewModel @Inject constructor(
 
                 UIAction.AddSubscription -> {
                     updateSubscriptionManagerState {
-                        isAddSubscription = true
+                        showAddSubscriptionDialog = true
                     }
                 }
 
-                is UIAction.AddSubscriptionFinish -> {
+                is UIAction.AddSubscriptionIng -> {
                     withContext(Dispatchers.Default) {
                         if (action.name.isNullOrBlank() && action.url.isNullOrBlank()) {
                             updateSubscriptionManagerState {
-                                isAddSubscription = false
+                                showAddSubscriptionDialog = false
                             }
                             return@withContext
                         }
@@ -224,7 +222,7 @@ class MainViewModel @Inject constructor(
                             return@withContext
                         }
                         updateSubscriptionManagerState {
-                            isAddSubscription = false
+                            isAddingSubscription = true
                             addSubscriptionCheckFailed = false
                         }
                         // add subscription
@@ -236,11 +234,17 @@ class MainViewModel @Inject constructor(
                         }.fold(
                             {
                                 updateSubscriptionManagerState {
+                                    isAddingSubscription = false
                                     isAddSubscriptionFailed = true
                                     addSubscriptionFailedTips = "添加失败: ${it.message}"
                                 }
                             },
                             {
+                                updateSubscriptionManagerState {
+                                    isAddSubscriptionFailed = false
+                                    showAddSubscriptionDialog = false
+                                    addSubscriptionFailedTips = ""
+                                }
                             }
                         )
                     }

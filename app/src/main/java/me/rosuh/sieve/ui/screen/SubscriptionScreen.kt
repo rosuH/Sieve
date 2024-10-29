@@ -2,10 +2,12 @@ package me.rosuh.sieve.ui.screen
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -13,11 +15,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -27,6 +29,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,7 +58,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -63,7 +65,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -77,7 +78,6 @@ import me.rosuh.sieve.R
 import me.rosuh.sieve.model.RuleMode
 import me.rosuh.sieve.model.database.RuleSubscriptionWithRules
 import me.rosuh.sieve.utils.calculateDuration
-import me.rosuh.sieve.utils.yellowBg
 
 @Stable
 class SubscriptionManagerState(
@@ -85,7 +85,9 @@ class SubscriptionManagerState(
     isBypassModeRefreshing: Boolean = false,
     isLoadingBypass: Boolean = false,
     isLoadingProxy: Boolean = false,
-    isAddSubscription: Boolean = false,
+    showAddSubscriptionDialog: Boolean = false,
+    isAddingSubscription: Boolean = false,
+    isAddSubscriptionSuccess: Boolean = false,
     isAddSubscriptionFailed: Boolean = false,
     addSubscriptionFailedTips: String = "",
     addSubscriptionCheckFailed: Boolean = false,
@@ -94,10 +96,10 @@ class SubscriptionManagerState(
 ) {
     var isProxyModeRefreshing: Boolean by mutableStateOf(isProxyModeRefreshing)
     var isBypassModeRefreshing: Boolean by mutableStateOf(isProxyModeRefreshing)
-    var isLoadingBypass: Boolean by mutableStateOf(isLoadingBypass)
-    var isLoadingProxy: Boolean by mutableStateOf(isLoadingProxy)
-    var isAddSubscription: Boolean by mutableStateOf(isAddSubscription)
-    var isAddSubscriptionFailed: Boolean by mutableStateOf(isAddSubscription)
+    var showAddSubscriptionDialog: Boolean by mutableStateOf(showAddSubscriptionDialog)
+    var isAddingSubscription: Boolean by mutableStateOf(isAddingSubscription)
+    var isAddSubscriptionFailed: Boolean by mutableStateOf(isAddSubscriptionFailed)
+    var isAddSubscriptionSuccess: Boolean by mutableStateOf(isAddSubscriptionSuccess)
     var addSubscriptionFailedTips: String by mutableStateOf(addSubscriptionFailedTips)
     var addSubscriptionCheckFailed: Boolean by mutableStateOf(addSubscriptionCheckFailed)
 
@@ -131,12 +133,15 @@ fun SubscriptionScreen(
     }
     val byPassSubscriptionList by subscriptionManagerState.byPassSubscriptionList.collectAsStateWithLifecycle()
     val proxySubscriptionList by subscriptionManagerState.proxySubscriptionList.collectAsStateWithLifecycle()
-    if (subscriptionManagerState.isAddSubscription) {
+    if (subscriptionManagerState.showAddSubscriptionDialog) {
         AddSubscriptionDialog(
             isUrlError = subscriptionManagerState.addSubscriptionCheckFailed,
+            isAddingSubscription = subscriptionManagerState.isAddingSubscription,
+            isAddSubscriptionFailed = subscriptionManagerState.isAddSubscriptionFailed,
+            isAddSubscriptionSuccess = subscriptionManagerState.isAddSubscriptionSuccess,
             onAddSubscriptionFinish = { name, url ->
                 viewModel.processUIAction(
-                    MainViewModel.UIAction.AddSubscriptionFinish(
+                    MainViewModel.UIAction.AddSubscriptionIng(
                         name,
                         url
                     )
@@ -451,6 +456,9 @@ private fun SubscriptionItem(
 @Composable
 fun AddSubscriptionDialog(
     isUrlError: Boolean,
+    isAddingSubscription: Boolean = false,
+    isAddSubscriptionFailed: Boolean = false,
+    isAddSubscriptionSuccess: Boolean = false,
     onAddSubscriptionFinish: (name: String?, url: String?) -> Unit
 ) {
     Dialog(
@@ -468,14 +476,8 @@ fun AddSubscriptionDialog(
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-                var name by remember { mutableStateOf("") }
+                val name by remember { mutableStateOf("") }
                 var url by remember { mutableStateOf("") }
-//                TextField(
-//                    value = name,
-//                    onValueChange = { name = it },
-//                    label = { Text("订阅名称") },
-//                    placeholder = { Text("留空则由配置文件指定") }
-//                )
                 TextField(
                     value = url,
                     onValueChange = { url = it },
@@ -487,6 +489,7 @@ fun AddSubscriptionDialog(
                     modifier = Modifier
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(
                         onClick = { onAddSubscriptionFinish(null, null) },
@@ -494,11 +497,29 @@ fun AddSubscriptionDialog(
                     ) {
                         Text("取消")
                     }
-                    TextButton(
-                        onClick = { onAddSubscriptionFinish(name, url) },
-                        modifier = Modifier.padding(8.dp),
+                    Box(
+                        modifier = Modifier.width(88.dp), // 固定宽度，确保空间一致
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text("确定")
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = isAddingSubscription,
+                            enter = fadeIn() + scaleIn(),
+                            exit = fadeOut() + scaleOut()
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        }
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = !isAddingSubscription,
+                            enter = fadeIn() + scaleIn(),
+                            exit = fadeOut() + scaleOut()
+                        ) {
+                            TextButton(
+                                onClick = { onAddSubscriptionFinish(name, url) },
+                                modifier = Modifier.padding(8.dp)
+                            ) {
+                                Text("确定")
+                            }
+                        }
                     }
                 }
             }
