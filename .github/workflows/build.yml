@@ -109,6 +109,7 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
       - name: Publish release.
+        id: publish_release
         if: success()
         uses: softprops/action-gh-release@v2
         with:
@@ -130,17 +131,9 @@ jobs:
         run: |
           LATEST_RELEASE=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest)
           APK_URL=$(echo "$LATEST_RELEASE" | sed -n 's/.*"browser_download_url": "\([^"]*-signed\.apk\)".*/\1/p')
-          if [ -n "$APK_URL" ]; then
-              APK_FILENAME=$(basename "$APK_URL")
-              curl -L -o "$APK_FILENAME" "$APK_URL"
-              echo "Downloaded signed APK: $APK_FILENAME"
-              APK_NAME=$(ls *-signed.apk)
-              echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
-              echo "Found APK: $APK_NAME"
-          else
-              echo "No signed APK found in the latest release"
-              exit 1
-          fi
+          APK_NAME=$(ls app/build/outputs/apk/release/*-signed.apk)
+          echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
+          echo "Found APK: $APK_NAME"
       - name: List files
         run: ls -l
       - name: Send commit to telegram
@@ -151,18 +144,17 @@ jobs:
           COMMIT_MESSAGE: |+
             新版本已发布 🎉
             ```
-            ${{ github.event.release.body }}
+            ${{ github.event.head_commit.message }}
             ```
-            by `${{ github.event.release.author.login }}`
-            [查看完整发布说明](${{ github.event.release.html_url }})
+            [查看完整发布说明](${{ steps.publish_release.url }})
         run: |
           ESCAPED=$(python3 -c 'import json,os,urllib.parse; print(urllib.parse.quote(json.dumps(os.environ["COMMIT_MESSAGE"])))')
           curl -v "https://api.telegram.org/bot${BOT_TOKEN}/sendMediaGroup?chat_id=${CHANNEL_ID}&media=%5B%7B%22type%22%3A%22document%22%2C%20%22media%22%3A%22attach%3A%2F%2FmarketRelease%22%2C%22parse_mode%22%3A%22MarkdownV2%22%2C%22caption%22:${ESCAPED}%7D%5D" -F marketRelease="@$APK_NAME"
-      - name: Upload Android Release to Play Store
-        uses: r0adkll/upload-google-play@v1.1.3
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: "me.rosuh.sieve"
-          releaseFiles: 'app-release.aab'
-          track: production
-          mappingFile: 'mapping.txt'
+#      - name: Upload Android Release to Play Store
+#        uses: r0adkll/upload-google-play@v1.1.3
+#        with:
+#          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+#          packageName: "me.rosuh.sieve"
+#          releaseFiles: 'app-release.aab'
+#          track: production
+#          mappingFile: 'mapping.txt'
