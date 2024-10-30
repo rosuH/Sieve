@@ -133,6 +133,7 @@ fun SubscriptionScreen(
     }
     val byPassSubscriptionList by subscriptionManagerState.byPassSubscriptionList.collectAsStateWithLifecycle()
     val proxySubscriptionList by subscriptionManagerState.proxySubscriptionList.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     if (subscriptionManagerState.showAddSubscriptionDialog) {
         AddSubscriptionDialog(
             isUrlError = subscriptionManagerState.addSubscriptionCheckFailed,
@@ -143,13 +144,13 @@ fun SubscriptionScreen(
                 viewModel.processUIAction(
                     MainViewModel.UIAction.AddSubscriptionIng(
                         name,
-                        url
+                        url,
+                        context.filesDir
                     )
                 )
             }
         )
     }
-    val context = LocalContext.current
     LaunchedEffect(subscriptionManagerState.isAddSubscriptionFailed) {
         if (subscriptionManagerState.isAddSubscriptionFailed) {
             Toast.makeText(

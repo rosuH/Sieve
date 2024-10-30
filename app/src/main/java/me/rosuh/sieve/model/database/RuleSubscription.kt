@@ -29,7 +29,8 @@ data class RuleSubscription(
     @ColumnInfo(name = "last_sync_time") val lastSyncTimeMill: Date,
     @ColumnInfo(name = "last_sync_status") val lastSyncStatus: SyncStatus,
     @ColumnInfo(name = "version") val version: Int,
-    @ColumnInfo(name = "extra") val extra: String
+    @ColumnInfo(name = "extra") val extra: String,
+    @ColumnInfo(name = "file_path") val filePath: String,
 )
 
 @Entity(

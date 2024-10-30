@@ -24,6 +24,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import javax.inject.Inject
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
+import java.io.File
 import kotlin.time.measureTime
 
 
@@ -48,13 +49,14 @@ class MainViewModel @Inject constructor(
         ) : UIAction()
 
         data object AddSubscription : UIAction()
-        data class AddSubscriptionIng(val name: String?, val url: String?) : UIAction()
+        data class AddSubscriptionIng(val name: String?, val url: String?, val defaultFileDir: File) : UIAction()
         data class SubscriptionSwitch(
             val subscription: RuleSubscriptionWithRules,
             val checked: Boolean
         ) : UIAction()
 
-        data class SubscriptionPullToRefresh(val ruleMode: RuleMode) : UIAction()
+        data class SubscriptionPullToRefresh(val ruleMode: RuleMode, val defaultFileDir: File) :
+            UIAction()
         class EditSubscription(val subscription: RuleSubscriptionWithRules) : UIAction()
         class DeleteSubscription(val subscription: RuleSubscriptionWithRules) : UIAction()
         data object ResetAddSubscriptionError : UIAction()
@@ -229,7 +231,8 @@ class MainViewModel @Inject constructor(
                         catchIO {
                             repo.addSubscription(
                                 name = action.name,
-                                url = url
+                                url = url,
+                                fileDir = action.defaultFileDir
                             )
                         }.fold(
                             {
@@ -269,7 +272,7 @@ class MainViewModel @Inject constructor(
                                 }
                             }
                         }
-                        repo.syncAllConf(action.ruleMode)
+                        repo.syncAllConf(action.ruleMode, action.defaultFileDir)
                         updateSubscriptionManagerState {
                             when (action.ruleMode) {
                                 RuleMode.Proxy -> {

@@ -3,6 +3,7 @@ package me.rosuh.sieve.model
 import me.rosuh.sieve.model.database.Rule
 import me.rosuh.sieve.model.database.RuleSubscription
 import me.rosuh.sieve.model.database.RuleSubscriptionWithRules
+import java.io.File
 import java.util.Date
 
 /**
@@ -19,7 +20,8 @@ import java.util.Date
 class ConfParser(
     val name: String,
     val url: String,
-    val priority: Int = 0,
+    val filePath: String,
+    val priority: Int = 0
 ) {
     private val ruleList: MutableList<Rule> = mutableListOf()
 
@@ -38,7 +40,8 @@ class ConfParser(
             lastSyncTimeMill = Date(System.currentTimeMillis()),
             lastSyncStatus = SyncStatus.Success,
             version = 0,
-            extra = ""
+            extra = "",
+            filePath = filePath
         )
         return RuleSubscriptionWithRules(subscription, ruleList)
     }

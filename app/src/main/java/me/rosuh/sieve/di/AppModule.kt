@@ -18,6 +18,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.charsets.Charsets
 import kotlinx.serialization.json.Json
 import me.rosuh.sieve.model.database.AppDatabase
+import me.rosuh.sieve.model.database.MIGRATION_1_2
 import javax.inject.Singleton
 
 @Module
@@ -32,7 +33,7 @@ object AppModule {
             app,
             AppDatabase::class.java,
             "database"
-        )
+        ).addMigrations(MIGRATION_1_2)
         try {
             return builder.build()
         } catch (e: Exception) {

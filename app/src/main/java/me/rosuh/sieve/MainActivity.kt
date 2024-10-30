@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -134,6 +135,7 @@ class MainActivity : ComponentActivity() {
                                         slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(transitionDuration))
                                     }
                                 ) {
+                                    val context = LocalContext.current
                                     SubscriptionScreen(
                                         viewModel = mainViewModel,
                                         onAddSubscription = {
@@ -151,7 +153,7 @@ class MainActivity : ComponentActivity() {
                                         },
                                         onPullToRefresh = {
                                             mainViewModel.processUIAction(
-                                                MainViewModel.UIAction.SubscriptionPullToRefresh(it)
+                                                MainViewModel.UIAction.SubscriptionPullToRefresh(it, context.filesDir)
                                             )
                                         },
                                         onBackPress = {

@@ -3,11 +3,8 @@ package me.rosuh.sieve.model
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import androidx.collection.LruCache
-import androidx.core.content.ContextCompat.startActivity
 import arrow.core.Either
-import arrow.core.left
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
@@ -16,12 +13,9 @@ import io.ktor.http.decodeURLPart
 import io.ktor.http.decodeURLQueryComponent
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.Json.Default.encodeToString
-import me.rosuh.sieve.MainViewModel
 import me.rosuh.sieve.model.database.AppDatabase
 import me.rosuh.sieve.model.database.Rule
 import me.rosuh.sieve.model.database.RuleSubscriptionWithRules
@@ -105,6 +99,7 @@ class RuleRepo @Inject constructor(
     suspend fun downloadConf(
         name: String?,
         url: String,
+        fileDir: File
     ): Either<Throwable, ConfParser> = catchIO {
         val response: HttpResponse = httpClient.get(url)
         val channel = response.bodyAsChannel()
@@ -116,25 +111,33 @@ class RuleRepo @Inject constructor(
             ?.get(1)
             ?.replace("\"", "")
             ?: runCatching { confName }.getOrNull() ?: name ?: "default.conf"
-        val confParser = ConfParser(fileName, url, db?.ruleSubscriptionDao()?.getAll()?.size ?: 0)
-        while (channel.isClosedForRead.not()) {
-            val line = channel.readUTF8Line(Int.MAX_VALUE)
-            confParser.parse(line ?: "")
+        val file = File(fileDir, fileName)
+        val filePath = file.absolutePath
+        val confParser = ConfParser(fileName, url, filePath = filePath, db?.ruleSubscriptionDao()?.getAll()?.size ?: 0)
+        Logger.i(TAG, "downloadConf: $url, $filePath")
+        file.writer(Charsets.UTF_8).use {
+            while (channel.isClosedForRead.not()) {
+                val line = channel.readUTF8Line(Int.MAX_VALUE)
+                confParser.parse(line ?: "")
+                it.write(line ?: "")
+                Logger.d(TAG, "downloadConf: writing --> $line")
+            }
         }
         return@catchIO confParser
     }
 
-    suspend fun syncConf(
-        subscriptionWithRules: RuleSubscriptionWithRules
+    private suspend fun syncConf(
+        subscriptionWithRules: RuleSubscriptionWithRules,
+        defaultFileDir: File
     ) = withContext(Dispatchers.IO) {
         val subscription = subscriptionWithRules.ruleSubscription
-        val confParser = downloadConf(subscription.name, subscription.url).fold(
+        val fileDir = File(subscription.filePath).parentFile ?: defaultFileDir
+        val confParser = downloadConf(subscription.name, subscription.url, fileDir).fold(
             { throw it },
             { it }
         )
         val newConf = confParser.get()
         val newSubscription = newConf.ruleSubscription
-        val newList = newConf.ruleList
         val ruleSubscription = subscriptionWithRules.copy(
             ruleSubscription = subscription.copy(
                 name = newSubscription.name,
@@ -144,7 +147,8 @@ class RuleRepo @Inject constructor(
                 lastSyncTimeMill = newSubscription.lastSyncTimeMill,
                 lastSyncStatus = newSubscription.lastSyncStatus,
                 version = newSubscription.version,
-                extra = newSubscription.extra
+                extra = newSubscription.extra,
+                filePath = newSubscription.filePath
             ),
             ruleList = newConf.ruleList
         )
@@ -152,11 +156,11 @@ class RuleRepo @Inject constructor(
         return@withContext
     }
 
-    suspend fun syncAllConf(mode: RuleMode) = withContext(Dispatchers.IO) {
+    suspend fun syncAllConf(mode: RuleMode, defaultFileDir: File) = withContext(Dispatchers.IO) {
         val subscriptionList = db?.ruleSubscriptionDao()?.getAllActiveWithRule(mode) ?: emptyList()
         subscriptionList.forEach { subscription ->
             measureTime {
-                syncConf(subscription)
+                syncConf(subscription, defaultFileDir)
             }.let {
                 Logger.d(TAG, "syncConf ${subscription.ruleSubscription.url} cost: $it")
             }
@@ -319,8 +323,8 @@ class RuleRepo @Inject constructor(
             )
     }
 
-    suspend fun addSubscription(name: String?, url: HttpUrl): Unit = withContext(Dispatchers.IO) {
-        downloadConf(name, url.toString()).fold(
+    suspend fun addSubscription(name: String?, url: HttpUrl, fileDir: File): Unit = withContext(Dispatchers.IO) {
+        downloadConf(name, url.toString(), fileDir).fold(
             { throw it },
             { confParser ->
                 val ruleSubscription = confParser.get()
