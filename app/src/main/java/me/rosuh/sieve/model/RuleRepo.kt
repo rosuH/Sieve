@@ -24,6 +24,7 @@ import me.rosuh.sieve.utils.catchIO
 import okhttp3.HttpUrl
 import java.io.File
 import java.net.URL
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.measureTime
@@ -99,7 +100,7 @@ class RuleRepo @Inject constructor(
     suspend fun downloadConf(
         name: String?,
         url: String,
-        fileDir: File
+        file: File
     ): Either<Throwable, ConfParser> = catchIO {
         val response: HttpResponse = httpClient.get(url)
         val channel = response.bodyAsChannel()
@@ -111,7 +112,6 @@ class RuleRepo @Inject constructor(
             ?.get(1)
             ?.replace("\"", "")
             ?: runCatching { confName }.getOrNull() ?: name ?: "default.conf"
-        val file = File(fileDir, fileName)
         val filePath = file.absolutePath
         val confParser = ConfParser(fileName, url, filePath = filePath, db?.ruleSubscriptionDao()?.getAll()?.size ?: 0)
         Logger.i(TAG, "downloadConf: $url, $filePath")
@@ -119,7 +119,7 @@ class RuleRepo @Inject constructor(
             while (channel.isClosedForRead.not()) {
                 val line = channel.readUTF8Line(Int.MAX_VALUE)
                 confParser.parse(line ?: "")
-                it.write(line ?: "")
+                it.write("${line ?: ""}\n")
                 Logger.d(TAG, "downloadConf: writing --> $line")
             }
         }
@@ -131,8 +131,10 @@ class RuleRepo @Inject constructor(
         defaultFileDir: File
     ) = withContext(Dispatchers.IO) {
         val subscription = subscriptionWithRules.ruleSubscription
-        val fileDir = File(subscription.filePath).parentFile ?: defaultFileDir
-        val confParser = downloadConf(subscription.name, subscription.url, fileDir).fold(
+        val file = File(subscription.filePath).takeIf { it.exists() } ?: run {
+            generateFile(defaultFileDir)
+        }
+        val confParser = downloadConf(subscription.name, subscription.url, file).fold(
             { throw it },
             { it }
         )
@@ -154,6 +156,11 @@ class RuleRepo @Inject constructor(
         )
         db?.ruleSubscriptionDao()?.insertAll(ruleSubscription)
         return@withContext
+    }
+
+    private fun generateFile(defaultFileDir: File): File {
+        val id = UUID.randomUUID().toString()
+        return File(defaultFileDir, id)
     }
 
     suspend fun syncAllConf(mode: RuleMode, defaultFileDir: File) = withContext(Dispatchers.IO) {
@@ -324,7 +331,8 @@ class RuleRepo @Inject constructor(
     }
 
     suspend fun addSubscription(name: String?, url: HttpUrl, fileDir: File): Unit = withContext(Dispatchers.IO) {
-        downloadConf(name, url.toString(), fileDir).fold(
+        val file = generateFile(fileDir)
+        downloadConf(name, url.toString(), file).fold(
             { throw it },
             { confParser ->
                 val ruleSubscription = confParser.get()
